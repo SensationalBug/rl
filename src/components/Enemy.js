@@ -20,4 +20,11 @@ export class Enemy {
         this.position.x += Math.cos(angle) * this.speed;
         this.position.y += Math.sin(angle) * this.speed;
     }
+
+    takeDamage(amount) {
+        this.health -= amount;
+        if (this.health <= 0) {
+            this.isMarkedForDeletion = true;
+        }
+    }
 }
