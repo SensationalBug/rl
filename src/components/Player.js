@@ -1,16 +1,29 @@
 export class Player {
-    constructor() {
-        this.position = { x: 0, y: 0 };
+    /**
+     * @param {object} character - The character data object from characters.js.
+     */
+    constructor(character) {
+        // Core properties
+        this.position = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
         this.velocity = { x: 0, y: 0 };
         this.width = 40;
         this.height = 40;
-        this.speed = 5;
-        this.weapon = null;
+
+        // Stats from the selected character
+        this.speed = character.stats.speed;
+        this.health = character.stats.health;
+        this.maxHealth = character.stats.health;
+        this.damage_bonus = character.stats.damage_bonus;
+        this.pickupRadius = character.stats.pickup_radius;
+
+        // Weapon and attack properties
+        this.weapon = null; // This will be set in the main init() function
         this.attackCooldown = 0;
+
+        // Leveling properties
         this.level = 1;
         this.xp = 0;
         this.xpToNextLevel = 10;
-        this.pickupRadius = 150;
     }
 
     draw(ctx) {
