@@ -67,6 +67,22 @@ export class Player {
         }
 
         ctx.restore();
+
+        // Draw Health Bar
+        const healthBarWidth = this.width;
+        const healthBarHeight = 5;
+        const healthBarX = this.position.x - healthBarWidth / 2;
+        const healthBarY = this.position.y + this.height / 2 + 5; // 5px below the player
+
+        const healthPercentage = this.health / this.maxHealth;
+
+        // Background
+        ctx.fillStyle = 'red';
+        ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+        // Foreground
+        ctx.fillStyle = 'green';
+        ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
     }
 
     update() {

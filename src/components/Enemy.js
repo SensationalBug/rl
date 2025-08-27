@@ -7,13 +7,33 @@ export class Enemy {
         this.speed = type.speed;
         this.color = type.color;
         this.health = type.health;
+        this.maxHealth = type.health; // Add maxHealth
         this.xpValue = type.xpValue;
         this.isMarkedForDeletion = false;
     }
 
     draw(ctx) {
+        // Draw the enemy
         ctx.fillStyle = this.color;
         ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+
+        // Draw Health Bar only if damaged
+        if (this.health < this.maxHealth) {
+            const healthBarWidth = this.width;
+            const healthBarHeight = 5;
+            const healthBarX = this.position.x;
+            const healthBarY = this.position.y - healthBarHeight - 2; // 2px above the enemy
+
+            const healthPercentage = this.health / this.maxHealth;
+
+            // Background
+            ctx.fillStyle = 'red';
+            ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+            // Foreground
+            ctx.fillStyle = 'green';
+            ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
+        }
     }
 
     update(player) {

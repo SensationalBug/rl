@@ -216,7 +216,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (player.velocity.x !== 0 && player.velocity.y !== 0) {
+            // Normalize diagonal speed for keyboard input
+            if (!joystick.active && player.velocity.x !== 0 && player.velocity.y !== 0) {
                 player.velocity.x /= Math.sqrt(2);
                 player.velocity.y /= Math.sqrt(2);
             }
@@ -230,7 +231,9 @@ window.addEventListener('DOMContentLoaded', () => {
             player.weapons.forEach(w => {
                 w.update();
                 if (w.baseData.id === 'onda-de-repulsion') {
+                    console.log(`Repulsion Wave State: Cooldown=${w.cooldown}, Active=${w.isActive}, Timer=${w.activeTimer}`);
                     if (w.cooldown <= 0 && !w.isActive) {
+                        console.log("!!! ACTIVATING REPULSION WAVE !!!");
                         w.isActive = true;
                         w.activeTimer = w.getStats().duration;
                         w.cooldown = w.getStats().cooldown;
