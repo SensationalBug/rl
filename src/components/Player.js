@@ -1,3 +1,5 @@
+import { drawPolygon } from '../utils/drawing.js';
+
 export class Player {
     /**
      * @param {object} character - The character data object from characters.js.
@@ -16,6 +18,9 @@ export class Player {
         this.damage_bonus = character.stats.damage_bonus;
         this.pickupRadius = character.stats.pickup_radius;
 
+        // Visual representation
+        this.shape = character.shape;
+
         // Weapon and attack properties
         this.weapon = null; // This will be set in the main init() function
         this.attackCooldown = 0;
@@ -27,8 +32,16 @@ export class Player {
     }
 
     draw(ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+        if (this.shape.type === 'polygon') {
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            drawPolygon(ctx, this.position.x, this.position.y, this.width / 2, this.shape.sides);
+        } else {
+            // Fallback to a rectangle if no shape is defined
+            ctx.fillStyle = 'white';
+            ctx.fillRect(this.position.x - this.width / 2, this.position.y - this.height / 2, this.width, this.height);
+        }
     }
 
     update() {
