@@ -49,12 +49,14 @@ export const weapons = {
         description: "Lanza cuchillos en la dirección que mira el jugador.",
         stats: { cooldown: 80, damage: 15, speed: 12 },
         attack: (player, enemies) => {
-            // Asume que el jugador tiene una propiedad 'direction' que se actualizará con el movimiento.
-            const directionX = player.direction === 'left' ? -1 : 1;
+            // Fires a projectile in the direction the player is currently facing.
             return [{
                 type: 'projectile',
                 position: { ...player.position },
-                velocity: { x: directionX * weapons.knives.stats.speed, y: 0 },
+                velocity: {
+                    x: player.direction.x * weapons.knives.stats.speed,
+                    y: player.direction.y * weapons.knives.stats.speed
+                },
                 damage: weapons.knives.stats.damage,
                 width: 10,
                 height: 4
