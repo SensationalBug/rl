@@ -2,14 +2,19 @@ import { weapons } from '../data/weapons.js';
 
 export class WeaponInstance {
     constructor(weaponId) {
-        // Deep copy the base weapon data to avoid modifying the original object
-        this.baseData = JSON.parse(JSON.stringify(weapons[weaponId]));
+        // Store a reference to the base weapon data (which includes the attack function)
+        this.baseData = weapons[weaponId];
+        this.id = weaponId;
+
+        // Deep copy the stats so that upgrades only affect this instance
+        this.stats = JSON.parse(JSON.stringify(this.baseData.stats));
+
         this.level = 1;
-        this.cooldown = this.baseData.stats.cooldown;
+        this.cooldown = this.stats.cooldown;
     }
 
     getStats() {
-        return this.baseData.stats;
+        return this.stats;
     }
 
     getName() {
@@ -21,21 +26,22 @@ export class WeaponInstance {
     }
 
     levelUp() {
-        if (this.level >= this.baseData.upgrades.length + 1) {
+        if (this.level >= this.baseData.upgrades.length) {
             console.log(`${this.getName()} is already max level.`);
             return;
         }
 
         const upgrade = this.baseData.upgrades[this.level - 1];
         if (upgrade) {
-            upgrade.apply(this.baseData); // Apply the upgrade to this instance's data
+            // Apply the upgrade to this instance's stats, not the base data
+            upgrade.apply(this.stats);
             this.level++;
             console.log(`${this.getName()} leveled up to ${this.level}!`);
         }
     }
 
     attack(player, enemies) {
-        // The attack function from the data file needs the instance-specific stats
+        // Call the attack function from the base data, passing the player and this instance
         return this.baseData.attack(player, this, enemies);
     }
 }
