@@ -231,7 +231,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     const radius = Math.max(canvas.width, canvas.height) * 0.7;
                     const x = player.position.x + Math.cos(angle) * radius;
                     const y = player.position.y + Math.sin(angle) * radius;
+                    // Correctly pass the enemy data object, not just the string key
                     enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[wave.type] }));
+                    spawnTimers[index] = wave.rate; // Reset spawn timer for this wave
                 }
             }
         });
