@@ -20,6 +20,7 @@ export class Player {
 
         // Visual representation
         this.shape = character.shape;
+        this.direction = { x: 1, y: 0 }; // Start facing right
 
         // Weapon and attack properties
         this.weapon = null; // This will be set in the main init() function

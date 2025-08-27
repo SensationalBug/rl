@@ -308,6 +308,16 @@ window.addEventListener('DOMContentLoaded', () => {
             player.velocity.x /= Math.sqrt(2);
             player.velocity.y /= Math.sqrt(2);
         }
+
+        // Update player direction based on velocity
+        if (player.velocity.x !== 0 || player.velocity.y !== 0) {
+            const magnitude = Math.hypot(player.velocity.x, player.velocity.y);
+            player.direction = {
+                x: player.velocity.x / magnitude,
+                y: player.velocity.y / magnitude
+            };
+        }
+
         player.update();
 
         // Weapon attack
