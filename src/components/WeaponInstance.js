@@ -48,7 +48,9 @@ export class WeaponInstance {
             if (this.activeTimer <= 0) {
                 this.isActive = false;
             }
-        } else if (this.cooldown > 0) {
+        }
+
+        if (this.cooldown > 0) {
             this.cooldown--;
         }
     }
