@@ -40,8 +40,9 @@ window.addEventListener('DOMContentLoaded', () => {
     // --- Game State & Core Variables ---
     let player, keys, enemies, projectiles, groundAreas, xpGems, gameState, gameTimer, spawnTimers, randomXpOrbTimer;
 
-    // --- Joystick State ---
+    // --- Input State ---
     let joystick = { active: false, baseX: 0, baseY: 0, knobX: 0, knobY: 0, radius: 60 };
+    let lastInputMethod = 'keyboard';
 
     function setupCanvas() {
         canvas.width = window.innerWidth;
@@ -200,14 +201,12 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // --- Player Movement ---
-            // 1. Assume keyboard movement
             player.velocity.x = 0; player.velocity.y = 0;
             if (keys.up) player.velocity.y = -player.speed;
             if (keys.down) player.velocity.y = player.speed;
             if (keys.left) player.velocity.x = -player.speed;
             if (keys.right) player.velocity.x = player.speed;
 
-            // 2. If joystick is active, it overrides keyboard
             if (joystick.active) {
                 const dx = joystick.knobX - joystick.baseX;
                 const dy = joystick.knobY - joystick.baseY;
@@ -215,33 +214,32 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (mag > 0) {
                     player.velocity.x = (dx / mag) * player.speed;
                     player.velocity.y = (dy / mag) * player.speed;
-                } else {
-                    // Joystick is active but at rest in the center
-                    player.velocity.x = 0;
-                    player.velocity.y = 0;
+                    lastInputMethod = 'joystick';
                 }
             }
 
-            // 3. Normalize for keyboard diagonal, but not for joystick
+            // Normalize for keyboard diagonal
             if (!joystick.active && player.velocity.x !== 0 && player.velocity.y !== 0) {
                 player.velocity.x /= Math.sqrt(2);
                 player.velocity.y /= Math.sqrt(2);
             }
 
-            // 4. Update direction ONLY if there is movement
+            // Update direction based on velocity, with special handling for joystick release
             if (player.velocity.x !== 0 || player.velocity.y !== 0) {
-                player.direction = { x: player.velocity.x, y: player.velocity.y };
+                if (lastInputMethod === 'joystick' && !joystick.active) {
+                    // Do not update direction, preserving the last joystick direction
+                } else {
+                    player.direction = { x: player.velocity.x, y: player.velocity.y };
+                }
             }
 
-            player.update(); // This applies velocity to position
+            player.update();
 
             // --- Weapon Updates & Attacks ---
             player.weapons.forEach(w => {
                 w.update();
                 if (w.id === 'onda-de-repulsion') {
-                    console.log(`Repulsion Wave State: Cooldown=${w.cooldown}, Active=${w.isActive}, Timer=${w.activeTimer}`);
                     if (w.cooldown <= 0 && !w.isActive) {
-                        console.log("!!! ACTIVATING REPULSION WAVE !!!");
                         w.isActive = true;
                         w.activeTimer = w.getStats().duration;
                         w.cooldown = w.getStats().cooldown;
@@ -346,6 +344,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const key = e.key.toLowerCase();
         if (gameState === 'levelUp' && key === 'enter') changeState('running');
         if(keys){
+            lastInputMethod = 'keyboard';
             if (key === 'w' || key === 'arrowup') keys.up = true;
             if (key === 's' || key === 'arrowdown') keys.down = true;
             if (key === 'a' || key === 'arrowleft') keys.left = true;
@@ -372,6 +371,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (gameState !== 'running') return;
         const touch = e.touches[0];
         joystick.active = true;
+        lastInputMethod = 'joystick';
         joystick.baseX = touch.clientX;
         joystick.baseY = touch.clientY;
         joystick.knobX = touch.clientX;
@@ -408,7 +408,10 @@ window.addEventListener('DOMContentLoaded', () => {
         joystick.active = false;
         joystickBase.style.display = 'none';
         joystickKnob.style.display = 'none';
-        // Velocity is now handled by the main loop to preserve direction
+        if (player) {
+            player.velocity.x = 0;
+            player.velocity.y = 0;
+        }
     });
 
     // Initial setup
