@@ -8,10 +8,12 @@
   </head>
   <body>
 
+    <!-- Pantalla de Inicio: El primer elemento que ve el jugador. -->
     <div id="start-screen">
       <p class="blinking-text">Haz click para iniciar</p>
     </div>
 
+    <!-- Menú Principal: Navegación central del juego. -->
     <div id="main-menu-screen" style="display: none;">
         <div class="menu-header">
             <div class="gold-counter">Oro: 0</div>
@@ -31,23 +33,28 @@
         </div>
     </div>
 
+    <!-- Pantalla de Selección de Personaje -->
     <div id="character-selection-screen" class="screen" style="display: none;">
         <h1>Elige tu Personaje</h1>
         <div id="character-list" class="selection-list">
-            <!-- Los personajes se insertarán aquí dinámicamente -->
+            <!-- Los personajes se insertarán aquí dinámicamente desde main.js -->
         </div>
         <button id="char-select-back-btn" class="back-btn">Volver</button>
     </div>
 
+    <!-- Pantalla de Visualización de Armas -->
     <div id="weapon-view-screen" class="screen" style="display: none;">
         <h1>Arsenal de Armas</h1>
         <div id="weapon-list" class="selection-list">
-            <!-- Las armas se insertarán aquí dinámicamente -->
+            <!-- Las armas se insertarán aquí dinámicamente desde main.js -->
         </div>
         <button id="weapon-view-back-btn" class="back-btn">Volver</button>
     </div>
 
+    <!-- Canvas del Juego: Donde ocurre la acción. -->
     <canvas id="gameCanvas" style="display: none;"></canvas>
+
+    <!-- Script principal del juego -->
     <script type="module" src="src/main.js"></script>
   </body>
 </html>

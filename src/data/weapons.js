@@ -1,5 +1,14 @@
-// Las funciones de ataque ahora devuelven un array de datos de proyectiles.
-// El bucle principal se encargará de crear las instancias.
+// Este archivo define el arsenal de armas disponibles en el juego.
+// La clave de cada arma (p.ej., 'magicWand') se usa como identificador.
+// Cada arma tiene:
+// - id: Identificador numérico único.
+// - name: Nombre del arma.
+// - shape: Objeto que describe su representación visual.
+// - description: Texto para la interfaz de usuario.
+// - stats: Objeto con las estadísticas del arma (cooldown, daño, etc.).
+// - attack: Una función que define el comportamiento del ataque.
+//            Devuelve un array de objetos que representan los ataques (proyectiles, hitboxes, etc.).
+
 export const weapons = {
     magicWand: {
         id: 1,
@@ -40,8 +49,7 @@ export const weapons = {
         description: "Lanza cuchillos en la dirección que mira el jugador.",
         stats: { cooldown: 80, damage: 15, speed: 12 },
         attack: (player, enemies) => {
-            // Asume que el jugador tiene una propiedad 'direction' (p.ej. 'right', 'left')
-            // Por ahora, lanzará hacia la derecha por defecto.
+            // Asume que el jugador tiene una propiedad 'direction' que se actualizará con el movimiento.
             const directionX = player.direction === 'left' ? -1 : 1;
             return [{
                 type: 'projectile',
@@ -60,8 +68,8 @@ export const weapons = {
         description: "Crea un aura dañina alrededor del jugador.",
         stats: { cooldown: 150, damage: 5, area: 100 },
         attack: (player, enemies) => {
-            // El ajo no crea proyectiles, su lógica de daño se aplicará en el bucle principal
-            // basándose en la proximidad. Devolvemos un tipo especial.
+            // El ajo no crea proyectiles. Su lógica de daño se podría aplicar
+            // en el bucle principal basándose en la proximidad.
             return [{
                 type: 'aura',
                 position: { ...player.position },
@@ -94,7 +102,7 @@ export const weapons = {
         stats: { cooldown: 100, damage: 20, range: 120 },
         attack: (player, enemies) => {
             // El látigo es un ataque instantáneo, no un proyectil persistente.
-            // Devolvemos un tipo especial para manejarlo en el bucle de colisiones.
+            // Se devuelve un 'hitbox' para manejar la colisión en un solo frame.
             return [
                 { type: 'hitbox', position: { ...player.position }, width: weapons.whip.stats.range, height: 20, side: 'left', damage: weapons.whip.stats.damage },
                 { type: 'hitbox', position: { ...player.position }, width: weapons.whip.stats.range, height: 20, side: 'right', damage: weapons.whip.stats.damage }

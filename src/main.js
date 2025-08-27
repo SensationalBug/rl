@@ -1,3 +1,6 @@
+// =================================================================================
+//                                  IMPORTS
+// =================================================================================
 import { Player } from './components/Player.js';
 import { Enemy } from './components/Enemy.js';
 import { Projectile } from './components/Projectile.js';
@@ -7,8 +10,11 @@ import { waveTimeline } from './data/waves.js';
 import { weapons } from './data/weapons.js';
 import { characters } from './data/characters.js';
 
+// =================================================================================
+//                                  GAME SETUP
+// =================================================================================
 window.addEventListener('DOMContentLoaded', () => {
-    // --- DOM Elements ---
+    // --- DOM Element References ---
     const startScreen = document.getElementById('start-screen');
     const mainMenuScreen = document.getElementById('main-menu-screen');
     const characterSelectionScreen = document.getElementById('character-selection-screen');
@@ -16,34 +22,42 @@ window.addEventListener('DOMContentLoaded', () => {
     const characterList = document.getElementById('character-list');
     const weaponList = document.getElementById('weapon-list');
 
-    // Buttons
+    // --- Button References ---
     const startGameBtn = document.getElementById('start-game-btn');
     const charactersBtn = document.getElementById('characters-btn');
     const weaponsBtn = document.getElementById('weapons-btn');
     const charSelectBackBtn = document.getElementById('char-select-back-btn');
     const weaponViewBackBtn = document.getElementById('weapon-view-back-btn');
 
+    // --- Canvas Setup ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // --- Game State & Variables ---
+    // --- Game State & Core Variables ---
     let player, keys, enemies, projectiles, xpGems, gameState, gameTimer, spawnTimers;
 
+    /**
+     * Sets the canvas dimensions to fill the window.
+     */
     function setupCanvas() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
 
+    /**
+     * Manages the visibility of different game screens.
+     * @param {string} newState - The new state to transition to (e.g., 'mainMenu', 'running').
+     */
     function changeState(newState) {
         gameState = newState;
-        // Hide all screens first
+        // Hide all screens first for a clean transition
         startScreen.style.display = 'none';
         mainMenuScreen.style.display = 'none';
         characterSelectionScreen.style.display = 'none';
         weaponViewScreen.style.display = 'none';
         canvas.style.display = 'none';
 
-        // Show the correct screen
+        // Show the correct screen based on the new state
         switch (gameState) {
             case 'startScreen':
                 startScreen.style.display = 'flex';
@@ -64,7 +78,15 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- UI Population ---
+    // =================================================================================
+    //                               UI POPULATION & DRAWING
+    // =================================================================================
+
+    /**
+     * Draws a polygon on a given canvas, used for character representation.
+     * @param {HTMLCanvasElement} canvas - The canvas to draw on.
+     * @param {number} sides - The number of sides for the polygon.
+     */
     function drawPolygon(canvas, sides) {
         const ctx = canvas.getContext('2d');
         const width = canvas.width;
@@ -92,6 +114,11 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fill();
     }
 
+    /**
+     * Draws a geometric shape on a canvas, used for weapon representation.
+     * @param {HTMLCanvasElement} canvas - The canvas to draw on.
+     * @param {object} shape - An object describing the shape to draw.
+     */
     function drawWeaponShape(canvas, shape) {
         const ctx = canvas.getContext('2d');
         const width = canvas.width;
@@ -119,7 +146,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, shape.outerRadius / 2, 0, Math.PI * 2);
                 ctx.moveTo(centerX + shape.innerRadius / 2, centerY);
-                ctx.arc(centerX, centerY, shape.innerRadius / 2, 0, Math.PI * 2, true); // Counter-clockwise
+                ctx.arc(centerX, centerY, shape.innerRadius / 2, 0, Math.PI * 2, true);
                 ctx.stroke();
                 ctx.fill();
                 break;
@@ -136,17 +163,26 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+     * Creates and injects the character cards into the selection screen.
+     */
     function populateCharacterSelection() {
-        characterList.innerHTML = ''; // Clear existing
+        characterList.innerHTML = ''; // Clear existing content
         characters.forEach(char => {
             const card = document.createElement('div');
             card.className = 'character-card';
+            card.style.cursor = 'pointer'; // Make it look clickable
             card.innerHTML = `
                 <canvas class="shape-canvas" id="canvas-char-${char.id}" width="100" height="100"></canvas>
                 <h2>${char.name}</h2>
                 <p>${char.description}</p>
                 <p class="ability">${char.ability}</p>
             `;
+
+            card.addEventListener('click', () => {
+                init(char); // Start game with the selected character
+            });
+
             characterList.appendChild(card);
 
             const shapeCanvas = document.getElementById(`canvas-char-${char.id}`);
@@ -154,8 +190,11 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /**
+     * Creates and injects the weapon cards into the viewing screen.
+     */
     function populateWeaponView() {
-        weaponList.innerHTML = ''; // Clear existing
+        weaponList.innerHTML = ''; // Clear existing content
         Object.values(weapons).forEach(weapon => {
             const card = document.createElement('div');
             card.className = 'weapon-card';
@@ -172,10 +211,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- Game Functions ---
-    function init() {
+    // =================================================================================
+    //                               CORE GAME LOGIC
+    // =================================================================================
+
+    /**
+     * Initializes or resets the game state for a new run.
+     * @param {object} character - The character object chosen by the player.
+     */
+    function init(character) {
         setupCanvas();
-        player = new Player();
+        player = new Player(character);
         keys = { up: { pressed: false }, down: { pressed: false }, left: { pressed: false }, right: { pressed: false } };
         enemies = [];
         projectiles = [];
@@ -185,12 +231,18 @@ window.addEventListener('DOMContentLoaded', () => {
         waveTimeline.forEach((wave, index) => {
             spawnTimers[index] = wave.rate;
         });
-        player.weapon = weapons.magicWand;
-        player.attackCooldown = player.weapon.cooldown;
+
+        // Assign starting weapon from character data
+        player.weapon = weapons[character.startingWeapon];
+        player.attackCooldown = player.weapon.stats.cooldown;
+
         changeState('running');
-        animate();
+        animate(); // Start the game loop
     }
 
+    /**
+     * Handles the spawning of enemies based on the game timer and wave data.
+     */
     function updateEnemySpawns() {
         if (gameState !== 'running') return;
         gameTimer++;
@@ -211,6 +263,9 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /**
+     * Draws the "Level Up" overlay.
+     */
     function drawLevelUpScreen() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -223,13 +278,18 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.textAlign = 'left';
     }
 
+    /**
+     * Draws the in-game UI (XP bar, timer).
+     */
     function drawUI() {
+        // XP Bar
         ctx.fillStyle = 'grey';
         ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
         ctx.fillStyle = 'cyan';
         const xpWidth = (player.xp / player.xpToNextLevel) * canvas.width;
         ctx.fillRect(0, canvas.height - 10, xpWidth > 0 ? xpWidth : 0, 10);
 
+        // Game Timer
         ctx.fillStyle = 'white';
         ctx.font = '30px Arial';
         ctx.textAlign = 'center';
@@ -239,20 +299,27 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.textAlign = 'left';
     }
 
+    /**
+     * The main game loop, called recursively with requestAnimationFrame.
+     */
     function animate() {
         requestAnimationFrame(animate);
 
+        // Pause animation if the game is not in a running state
         if (gameState === 'levelUp') {
             drawLevelUpScreen();
             return;
         }
-
         if (gameState !== 'running') return;
 
+        // --- Updates ---
         updateEnemySpawns();
+
+        // --- Drawing ---
         ctx.fillStyle = '#0a0a2e';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // Player movement
         player.velocity.x = 0;
         player.velocity.y = 0;
         if (keys.up.pressed) player.velocity.y = -player.speed;
@@ -265,6 +332,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
         player.update();
 
+        // Weapon attack
         if (player.attackCooldown > 0) player.attackCooldown--;
         else {
             const newProjectilesData = player.weapon.attack(player, enemies);
@@ -274,20 +342,24 @@ window.addEventListener('DOMContentLoaded', () => {
             player.attackCooldown = player.weapon.cooldown;
         }
 
+        // Update all game objects
         xpGems.forEach(gem => gem.update(player));
         enemies.forEach(e => e.update(player));
         projectiles.forEach(p => p.update());
 
+        // Camera translation to follow player
         ctx.save();
         const cameraX = player.position.x - canvas.width / 2 + player.width / 2;
         const cameraY = player.position.y - canvas.height / 2 + player.height / 2;
         ctx.translate(-cameraX, -cameraY);
 
+        // Draw all game objects relative to the camera
         xpGems.forEach(gem => gem.draw(ctx));
         enemies.forEach(e => e.draw(ctx));
         projectiles.forEach(p => p.draw(ctx));
         player.draw(ctx);
 
+        // --- Collision Detection ---
         projectiles.forEach(proj => {
             enemies.forEach(enemy => {
                 const dist = Math.hypot(proj.position.x - enemy.position.x, proj.position.y - enemy.position.y);
@@ -309,21 +381,24 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        ctx.restore();
+        ctx.restore(); // Reset camera transform
+
+        // --- UI & Cleanup ---
         drawUI();
         projectiles = projectiles.filter(p => !p.isMarkedForDeletion);
         enemies = enemies.filter(e => !e.isMarkedForDeletion);
         xpGems = xpGems.filter(g => !g.isMarkedForDeletion);
     }
 
-    // --- Event Listeners ---
+    // =================================================================================
+    //                               EVENT LISTENERS
+    // =================================================================================
     startScreen.addEventListener('click', () => changeState('mainMenu'));
-    startGameBtn.addEventListener('click', () => init());
+    startGameBtn.addEventListener('click', () => changeState('characterSelection'));
     charactersBtn.addEventListener('click', () => changeState('characterSelection'));
     weaponsBtn.addEventListener('click', () => changeState('weaponView'));
     charSelectBackBtn.addEventListener('click', () => changeState('mainMenu'));
     weaponViewBackBtn.addEventListener('click', () => changeState('mainMenu'));
-
 
     window.addEventListener('keydown', ({ key: k }) => {
         const key = k.toLowerCase();
@@ -351,7 +426,9 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Initial Setup ---
+    // =================================================================================
+    //                               INITIAL SCRIPT EXECUTION
+    // =================================================================================
     populateCharacterSelection();
     populateWeaponView();
     changeState('startScreen');
