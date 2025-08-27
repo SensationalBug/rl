@@ -309,9 +309,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (player.attackCooldown > 0) {
             player.attackCooldown--;
         } else {
-            const newProjectilesData = player.weapon.attack(player, enemies);
-            newProjectilesData.forEach(data => {
-                projectiles.push(new Projectile(data));
+            const newAttacks = player.weapon.attack(player, enemies);
+            newAttacks.forEach(attackData => {
+                // Check the type of attack and handle accordingly
+                if (attackData.type === 'projectile') {
+                    projectiles.push(new Projectile(attackData));
+                } else {
+                    // Placeholder for other attack types (aura, hitbox, etc.)
+                    // This prevents the game from crashing with non-projectile weapons.
+                    console.log(`Unhandled attack type: ${attackData.type}`);
+                }
             });
             // Reset the cooldown by using the value from the weapon's stats
             player.attackCooldown = player.weapon.stats.cooldown;
