@@ -30,8 +30,11 @@ export class Player {
 
 
         // Weapon and attack properties
-        this.weapon = null; // This will be set in the main init() function
-        this.attackCooldown = 0;
+        this.weapons = []; // Player can have multiple weapon instances
+
+        // Modifiers from passive upgrades
+        this.cooldown_modifier = 1;
+        this.health_regen = 0;
 
         // Leveling properties
         this.level = 1;

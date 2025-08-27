@@ -129,7 +129,7 @@ canvas {
     padding: 1.5rem 3rem;
 }
 
-/* --- Selection Screens --- */
+/* --- Selection & Overlay Screens --- */
 .screen {
     display: none; /* Hidden by default */
     position: absolute;
@@ -143,6 +143,53 @@ canvas {
     padding: 2rem;
     box-sizing: border-box;
     overflow-y: auto;
+    z-index: 10; /* Ensure screens are on top of game canvas */
+}
+
+#level-up-screen {
+    background-color: rgba(0, 0, 0, 0.75);
+    justify-content: center;
+    z-index: 20; /* Ensure level up is on top of other screens if needed */
+}
+
+#upgrade-cards-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.upgrade-card {
+    background-color: #2a2a5a;
+    border: 2px solid #7a7acd;
+    border-radius: 15px;
+    width: 200px;
+    height: 300px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    justify-content: space-around;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.upgrade-card:hover {
+    transform: scale(1.05);
+    border-color: #c5c5ff;
+}
+
+.upgrade-card h3 {
+    margin: 0;
+    color: #ffc107;
+    font-size: 1.5rem;
+}
+
+.upgrade-card p {
+    margin: 0;
+    font-size: 1rem;
 }
 
 .screen h1 {
