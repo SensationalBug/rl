@@ -1,7 +1,5 @@
-import { enemyTypes } from './enemies.js';
-
 export const waveTimeline = [
-    { time: 0, type: enemyTypes.zombie, rate: 60 }, // A zombie every second
-    { time: 30, type: enemyTypes.bat, rate: 45 },   // A bat every half-second starts at 1 min
-    { time: 60, type: enemyTypes.zombie, rate: 30 },
+  { time: 0, type: 'zombie', rate: 60 }, // A zombie every second
+  { time: 30, type: 'bat', rate: 45 },   // A bat every 0.75 seconds, starts at 30s
+  { time: 60, type: 'zombie', rate: 30 }, // More zombies start at 1 min
 ];
