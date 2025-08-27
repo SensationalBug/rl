@@ -1,0 +1,12 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #0a0a2e;
+}
+canvas {
+  background-color: #000; /* Changed the temporary red to black */
+  display: block;
+}
