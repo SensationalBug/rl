@@ -200,12 +200,14 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             // --- Player Movement ---
+            // 1. Assume keyboard movement
             player.velocity.x = 0; player.velocity.y = 0;
             if (keys.up) player.velocity.y = -player.speed;
             if (keys.down) player.velocity.y = player.speed;
             if (keys.left) player.velocity.x = -player.speed;
             if (keys.right) player.velocity.x = player.speed;
 
+            // 2. If joystick is active, it overrides keyboard
             if (joystick.active) {
                 const dx = joystick.knobX - joystick.baseX;
                 const dy = joystick.knobY - joystick.baseY;
@@ -213,24 +215,30 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (mag > 0) {
                     player.velocity.x = (dx / mag) * player.speed;
                     player.velocity.y = (dy / mag) * player.speed;
+                } else {
+                    // Joystick is active but at rest in the center
+                    player.velocity.x = 0;
+                    player.velocity.y = 0;
                 }
             }
 
-            // Normalize diagonal speed for keyboard input
+            // 3. Normalize for keyboard diagonal, but not for joystick
             if (!joystick.active && player.velocity.x !== 0 && player.velocity.y !== 0) {
                 player.velocity.x /= Math.sqrt(2);
                 player.velocity.y /= Math.sqrt(2);
             }
 
+            // 4. Update direction ONLY if there is movement
             if (player.velocity.x !== 0 || player.velocity.y !== 0) {
                 player.direction = { x: player.velocity.x, y: player.velocity.y };
             }
-            player.update();
+
+            player.update(); // This applies velocity to position
 
             // --- Weapon Updates & Attacks ---
             player.weapons.forEach(w => {
                 w.update();
-                if (w.baseData.id === 'onda-de-repulsion') {
+                if (w.id === 'onda-de-repulsion') {
                     console.log(`Repulsion Wave State: Cooldown=${w.cooldown}, Active=${w.isActive}, Timer=${w.activeTimer}`);
                     if (w.cooldown <= 0 && !w.isActive) {
                         console.log("!!! ACTIVATING REPULSION WAVE !!!");
@@ -309,7 +317,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // --- Draw Repulsion Wave Aura ---
             player.weapons.forEach(w => {
-                if (w.isActive && w.baseData.id === 'onda-de-repulsion') {
+                if (w.isActive && w.id === 'onda-de-repulsion') {
                     const stats = w.getStats();
                     ctx.beginPath();
                     ctx.arc(player.position.x, player.position.y, stats.area, 0, Math.PI * 2);
@@ -400,10 +408,7 @@ window.addEventListener('DOMContentLoaded', () => {
         joystick.active = false;
         joystickBase.style.display = 'none';
         joystickKnob.style.display = 'none';
-        if (player) {
-            player.velocity.x = 0;
-            player.velocity.y = 0;
-        }
+        // Velocity is now handled by the main loop to preserve direction
     });
 
     // Initial setup
