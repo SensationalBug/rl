@@ -3,11 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mi Juego de Torre</title>
+    <title>Vampire Clone</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <canvas id="gameCanvas"></canvas>
+
+    <div id="start-screen">
+      <p class="blinking-text">Haz click para iniciar</p>
+    </div>
+
+    <div id="main-menu-screen" style="display: none;">
+        <div class="menu-header">
+            <div class="gold-counter">Oro: 0</div>
+            <div class="menu-options">
+                <button id="options-btn">Opciones</button>
+                <button id="exit-btn">Salir</button>
+            </div>
+        </div>
+        <div class="menu-content">
+            <button id="start-game-btn">Comenzar</button>
+        </div>
+        <div class="menu-footer">
+            <button id="upgrades-btn">Mejoras</button>
+            <button id="bestiary-btn">Bestiario</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" style="display: none;"></canvas>
     <script type="module" src="src/main.js"></script>
   </body>
 </html>
