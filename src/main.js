@@ -6,6 +6,7 @@ import { Enemy } from './components/Enemy.js';
 import { Projectile } from './components/Projectile.js';
 import { XPGem } from './components/XPGem.js';
 import { GroundArea } from './components/GroundArea.js';
+import { Aura } from './components/Aura.js';
 import { enemyTypes } from './data/enemies.js';
 import { waveTimeline } from './data/waves.js';
 import { weapons } from './data/weapons.js';
@@ -36,7 +37,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, gameState, gameTimer, spawnTimers;
+    let player, keys, enemies, projectiles, groundAreas, activeAuras, xpGems, gameState, gameTimer, spawnTimers;
 
     /**
      * Sets the canvas dimensions to fill the window.
@@ -200,6 +201,7 @@ window.addEventListener('DOMContentLoaded', () => {
         enemies = [];
         projectiles = [];
         groundAreas = [];
+        activeAuras = [];
         xpGems = [];
         gameTimer = 0;
         spawnTimers = {};
@@ -317,12 +319,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (attackData.type === 'projectile') {
                     projectiles.push(new Projectile(attackData));
                 } else if (attackData.type === 'aura') {
-                    enemies.forEach(enemy => {
-                        const dist = Math.hypot(attackData.position.x - enemy.position.x, attackData.position.y - enemy.position.y);
-                        if (dist < attackData.radius) {
-                            enemy.takeDamage(attackData.damage);
-                        }
-                    });
+                    activeAuras.push(new Aura({ ...attackData, duration: 5 })); // Short duration for a "pulse"
                 } else if (attackData.type === 'hitbox') {
                     enemies.forEach(enemy => {
                         const hitbox = {
@@ -354,6 +351,7 @@ window.addEventListener('DOMContentLoaded', () => {
         enemies.forEach(e => e.update(player));
         projectiles.forEach(p => p.update());
         groundAreas.forEach(area => area.update(enemies));
+        activeAuras.forEach(aura => aura.update(player.position));
 
         // Camera translation to follow player
         ctx.save();
@@ -363,6 +361,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // Draw all game objects relative to the camera
         groundAreas.forEach(area => area.draw(ctx));
+        activeAuras.forEach(aura => aura.draw(ctx));
         xpGems.forEach(gem => gem.draw(ctx));
         enemies.forEach(e => e.draw(ctx));
         projectiles.forEach(p => p.draw(ctx));
@@ -376,6 +375,16 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (dist < proj.radius + enemy.width / 2) {
                     proj.isMarkedForDeletion = true;
                     enemy.takeDamage(proj.damage);
+                }
+            });
+        });
+
+        activeAuras.forEach(aura => {
+            enemies.forEach(enemy => {
+                if (enemy.isMarkedForDeletion) return;
+                const dist = Math.hypot(aura.position.x - enemy.position.x, aura.position.y - enemy.position.y);
+                if (dist < aura.radius) {
+                    enemy.takeDamage(player.weapon.stats.damage / 60); // Apply damage over time
                 }
             });
         });
@@ -402,6 +411,7 @@ window.addEventListener('DOMContentLoaded', () => {
         drawUI();
         projectiles = projectiles.filter(p => !p.isMarkedForDeletion);
         groundAreas = groundAreas.filter(a => !a.isMarkedForDeletion);
+        activeAuras = activeAuras.filter(a => !a.isMarkedForDeletion);
         enemies = enemies.filter(e => !e.isMarkedForDeletion);
         xpGems = xpGems.filter(g => !g.isMarkedForDeletion);
     }

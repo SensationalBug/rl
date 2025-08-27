@@ -5,7 +5,7 @@
 // - shape: Objeto que describe su representación visual (un polígono).
 // - stats: Un objeto con las estadísticas base del personaje.
 // - startingWeapon: La clave del arma inicial del personaje (de weapons.js).
-// - ability: Una descripción de su habilidad pasiva.
+// - ability: Una descripción de su habilidad pasiva y su arma inicial.
 // - description: Un texto de ambientación.
 
 export const characters = [
@@ -23,7 +23,7 @@ export const characters = [
       pickup_radius: 50,
     },
     startingWeapon: 'magicWand',
-    ability: "Habilidad: Comienza con un nivel extra.",
+    ability: "Habilidad: Comienza con Varita Mágica.",
     description: "Un caballero equilibrado, listo para cualquier desafío."
   },
   {
@@ -40,7 +40,7 @@ export const characters = [
       pickup_radius: 50,
     },
     startingWeapon: 'garlic',
-    ability: "Habilidad: +50% de vida máxima.",
+    ability: "Habilidad: +50% de vida máxima. Comienza con Ajo.",
     description: "Lento pero muy resistente. Ideal para aguantar grandes oleadas."
   },
   {
@@ -57,7 +57,7 @@ export const characters = [
       pickup_radius: 60,
     },
     startingWeapon: 'knives',
-    ability: "Habilidad: +25% de velocidad de movimiento.",
+    ability: "Habilidad: +25% de velocidad. Comienza con Cuchillos.",
     description: "Se mueve rápidamente por el campo de batalla, esquivando con facilidad."
   },
   {
@@ -74,7 +74,7 @@ export const characters = [
       pickup_radius: 100,
     },
     startingWeapon: 'holyWater',
-    ability: "Habilidad: Aumenta el radio de recolección de gemas.",
+    ability: "Habilidad: Mayor radio de recolección. Comienza con Agua Bendita.",
     description: "La suerte siempre está de su lado, atrayendo la experiencia hacia él."
   },
   {
@@ -91,7 +91,7 @@ export const characters = [
       pickup_radius: 50,
     },
     startingWeapon: 'whip',
-    ability: "Habilidad: +20% de daño a todas las armas.",
+    ability: "Habilidad: +20% de daño. Comienza con Látigo.",
     description: "Frágil pero letal. Causa un daño inmenso a costa de su propia defensa."
   }
 ];
