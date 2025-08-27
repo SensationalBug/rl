@@ -9,6 +9,7 @@ import { enemyTypes } from './data/enemies.js';
 import { waveTimeline } from './data/waves.js';
 import { weapons } from './data/weapons.js';
 import { characters } from './data/characters.js';
+import { drawPolygon } from './utils/drawing.js';
 
 // =================================================================================
 //                                  GAME SETUP
@@ -83,38 +84,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // =================================================================================
 
     /**
-     * Draws a polygon on a given canvas, used for character representation.
-     * @param {HTMLCanvasElement} canvas - The canvas to draw on.
-     * @param {number} sides - The number of sides for the polygon.
-     */
-    function drawPolygon(canvas, sides) {
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-        const centerX = width / 2;
-        const centerY = height / 2;
-        const radius = width / 2 * 0.8;
-
-        ctx.clearRect(0, 0, width, height);
-        ctx.beginPath();
-        ctx.moveTo(centerX + radius * Math.cos(0), centerY + radius * Math.sin(0));
-
-        for (let i = 1; i <= sides; i++) {
-            ctx.lineTo(
-                centerX + radius * Math.cos(i * 2 * Math.PI / sides),
-                centerY + radius * Math.sin(i * 2 * Math.PI / sides)
-            );
-        }
-
-        ctx.closePath();
-        ctx.strokeStyle = '#ffc107';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(255, 193, 7, 0.3)';
-        ctx.fill();
-    }
-
-    /**
      * Draws a geometric shape on a canvas, used for weapon representation.
      * @param {HTMLCanvasElement} canvas - The canvas to draw on.
      * @param {object} shape - An object describing the shape to draw.
@@ -186,7 +155,11 @@ window.addEventListener('DOMContentLoaded', () => {
             characterList.appendChild(card);
 
             const shapeCanvas = document.getElementById(`canvas-char-${char.id}`);
-            drawPolygon(shapeCanvas, char.shape.sides);
+            const shapeCtx = shapeCanvas.getContext('2d');
+            shapeCtx.strokeStyle = '#ffc107';
+            shapeCtx.lineWidth = 3;
+            shapeCtx.fillStyle = 'rgba(255, 193, 7, 0.3)';
+            drawPolygon(shapeCtx, shapeCanvas.width / 2, shapeCanvas.height / 2, shapeCanvas.width / 2 * 0.8, char.shape.sides);
         });
     }
 
@@ -333,13 +306,15 @@ window.addEventListener('DOMContentLoaded', () => {
         player.update();
 
         // Weapon attack
-        if (player.attackCooldown > 0) player.attackCooldown--;
-        else {
+        if (player.attackCooldown > 0) {
+            player.attackCooldown--;
+        } else {
             const newProjectilesData = player.weapon.attack(player, enemies);
             newProjectilesData.forEach(data => {
                 projectiles.push(new Projectile(data));
             });
-            player.attackCooldown = player.weapon.cooldown;
+            // Reset the cooldown by using the value from the weapon's stats
+            player.attackCooldown = player.weapon.stats.cooldown;
         }
 
         // Update all game objects
