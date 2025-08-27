@@ -1,5 +1,3 @@
-import { drawPolygon } from '../utils/drawing.js';
-
 export class Player {
     /**
      * @param {object} character - The character data object from characters.js.
@@ -8,8 +6,9 @@ export class Player {
         // Core properties
         this.position = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
         this.velocity = { x: 0, y: 0 };
-        this.width = 40;
-        this.height = 40;
+        this.width = 40; // The hitbox width
+        this.height = 40; // The hitbox height
+        this.direction = { x: 0, y: -1 }; // Start facing up, as per the new assets
 
         // Stats from the selected character
         this.speed = character.stats.speed;
@@ -19,8 +18,16 @@ export class Player {
         this.pickupRadius = character.stats.pickup_radius;
 
         // Visual representation
-        this.shape = character.shape;
-        this.direction = { x: 1, y: 0 }; // Start facing right
+        this.image = new Image();
+        this.image.src = character.imageSrc;
+        this.imageLoaded = false;
+        this.image.onload = () => {
+            this.imageLoaded = true;
+        };
+        this.image.onerror = () => {
+            console.error(`Failed to load image at: ${character.imageSrc}`);
+        };
+
 
         // Weapon and attack properties
         this.weapon = null; // This will be set in the main init() function
@@ -33,16 +40,30 @@ export class Player {
     }
 
     draw(ctx) {
-        if (this.shape.type === 'polygon') {
-            ctx.fillStyle = 'white';
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 3;
-            drawPolygon(ctx, this.position.x, this.position.y, this.width / 2, this.shape.sides);
+        ctx.save();
+        // Translate context to the player's position
+        ctx.translate(this.position.x, this.position.y);
+
+        // Calculate rotation angle
+        // The angle is calculated from the direction vector, with an offset because the image faces up
+        const angle = Math.atan2(this.direction.y, this.direction.x) + Math.PI / 2;
+        ctx.rotate(angle);
+
+        // Draw the image if it's loaded, otherwise draw a fallback shape
+        if (this.imageLoaded) {
+            ctx.drawImage(this.image, -this.width / 2, -this.height / 2, this.width, this.height);
         } else {
-            // Fallback to a rectangle if no shape is defined
+            // Fallback to a triangle if the image hasn't loaded yet
+            ctx.beginPath();
+            ctx.moveTo(0, -this.height / 2);
+            ctx.lineTo(-this.width / 2, this.height / 2);
+            ctx.lineTo(this.width / 2, this.height / 2);
+            ctx.closePath();
             ctx.fillStyle = 'white';
-            ctx.fillRect(this.position.x - this.width / 2, this.position.y - this.height / 2, this.width, this.height);
+            ctx.fill();
         }
+
+        ctx.restore();
     }
 
     update() {

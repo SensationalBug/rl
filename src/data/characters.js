@@ -1,97 +1,82 @@
-// Este archivo define la lista de personajes jugables.
-// Cada personaje tiene:
+// Este archivo define la lista de naves jugables.
+// Cada nave tiene:
 // - id: Identificador único.
-// - name: Nombre del personaje.
-// - shape: Objeto que describe su representación visual (un polígono).
-// - stats: Un objeto con las estadísticas base del personaje.
-// - startingWeapon: La clave del arma inicial del personaje (de weapons.js).
+// - name: Nombre de la nave.
+// - imageSrc: La ruta al archivo de imagen de la nave.
+// - stats: Un objeto con las estadísticas base.
+// - startingWeapon: La clave del arma inicial (de weapons.js).
 // - ability: Una descripción de su habilidad pasiva y su arma inicial.
 // - description: Un texto de ambientación.
 
 export const characters = [
   {
     id: 1,
-    name: "Triángulo Valiente",
-    shape: {
-      type: 'polygon',
-      sides: 3,
-    },
+    name: "Vanguard",
+    imageSrc: 'assets/ships/ship_1.png',
     stats: {
       health: 100,
       speed: 4,
       damage_bonus: 0,
       pickup_radius: 50,
     },
-    startingWeapon: 'magicWand',
-    ability: "Habilidad: Comienza con Varita Mágica.",
-    description: "Un caballero equilibrado, listo para cualquier desafío."
+    startingWeapon: 'magicWand', // Canon
+    ability: "Habilidad: Nave de combate equilibrada.",
+    description: "Una nave versátil, lista para cualquier misión."
   },
   {
     id: 2,
-    name: "Cuadrado Robusto",
-    shape: {
-      type: 'polygon',
-      sides: 4,
-    },
+    name: "Odyssey",
+    imageSrc: 'assets/ships/ship_2.png',
     stats: {
       health: 150,
       speed: 3,
       damage_bonus: 0,
       pickup_radius: 50,
     },
-    startingWeapon: 'garlic',
-    ability: "Habilidad: +50% de vida máxima. Comienza con Ajo.",
-    description: "Lento pero muy resistente. Ideal para aguantar grandes oleadas."
+    startingWeapon: 'garlic', // Onda de repulsion
+    ability: "Habilidad: +50% de vida máxima en el casco.",
+    description: "Lenta pero muy resistente. Ideal para aguantar flotas enemigas."
   },
   {
     id: 3,
-    name: "Pentágono Veloz",
-    shape: {
-      type: 'polygon',
-      sides: 5,
-    },
+    name: "Nebula",
+    imageSrc: 'assets/ships/ship_3.png',
     stats: {
       health: 80,
       speed: 6,
       damage_bonus: 0,
       pickup_radius: 60,
     },
-    startingWeapon: 'knives',
-    ability: "Habilidad: +25% de velocidad. Comienza con Cuchillos.",
-    description: "Se mueve rápidamente por el campo de batalla, esquivando con facilidad."
+    startingWeapon: 'knives', // Arma de rayos unitarios
+    ability: "Habilidad: +25% de velocidad de motor.",
+    description: "Se mueve ágilmente por el campo de asteroides."
   },
   {
     id: 4,
-    name: "Hexágono Afortunado",
-    shape: {
-      type: 'polygon',
-      sides: 6,
-    },
+    name: "Zenith",
+    imageSrc: 'assets/ships/ship_4.png',
     stats: {
       health: 100,
       speed: 4,
       damage_bonus: 0,
       pickup_radius: 100,
     },
-    startingWeapon: 'holyWater',
-    ability: "Habilidad: Mayor radio de recolección. Comienza con Agua Bendita.",
-    description: "La suerte siempre está de su lado, atrayendo la experiencia hacia él."
+    startingWeapon: 'holyWater', // Explosion estelar
+    ability: "Habilidad: Mayor radio de atracción de recursos.",
+    description: "Su tecnología de atracción le da ventaja en la recolección."
   },
   {
     id: 5,
-    name: "Heptágono de Cristal",
-    shape: {
-      type: 'polygon',
-      sides: 7,
-    },
+    name: "Chronos",
+    imageSrc: 'assets/ships/ship_5.png',
     stats: {
       health: 60,
       speed: 4,
       damage_bonus: 0.20,
       pickup_radius: 50,
     },
-    startingWeapon: 'whip',
-    ability: "Habilidad: +20% de daño. Comienza con Látigo.",
-    description: "Frágil pero letal. Causa un daño inmenso a costa de su propia defensa."
+    startingWeapon: 'whip', // Rayo horizontal
+    ability: "Habilidad: +20% de daño en todos los sistemas de armas.",
+    description: "Un 'cañón de cristal', frágil pero increíblemente letal."
   }
 ];

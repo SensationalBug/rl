@@ -139,10 +139,11 @@ canvas {
     text-align: center;
 }
 
-.character-card .shape-canvas {
+.character-card .ship-preview-img {
     width: 100px;
     height: 100px;
     margin-bottom: 1rem;
+    object-fit: contain;
 }
 
 .character-card h2 {
@@ -157,33 +158,6 @@ canvas {
 .character-card .ability {
     font-style: italic;
     color: #00e5ff;
-}
-
-.weapon-card {
-    background-color: #1a1a3e;
-    border: 2px solid #7f4a4a;
-    border-radius: 10px;
-    padding: 1.5rem;
-    width: 250px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.weapon-card .shape-canvas {
-    width: 100px;
-    height: 100px;
-    margin-bottom: 1rem;
-}
-
-.weapon-card h2 {
-    margin-top: 0;
-    color: #ff8a80;
-}
-
-.weapon-card p {
-    margin: 0.5rem 0;
 }
 
 .back-btn {
