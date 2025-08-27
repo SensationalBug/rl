@@ -1,13 +1,4 @@
 // Este archivo define la lista de naves jugables.
-// Cada nave tiene:
-// - id: Identificador único.
-// - name: Nombre de la nave.
-// - imageSrc: La ruta al archivo de imagen de la nave.
-// - stats: Un objeto con las estadísticas base.
-// - startingWeapon: La clave del arma inicial (de weapons.js).
-// - ability: Una descripción de su habilidad pasiva y su arma inicial.
-// - description: Un texto de ambientación.
-
 export const characters = [
   {
     id: 1,
@@ -19,7 +10,7 @@ export const characters = [
       damage_bonus: 0,
       pickup_radius: 50,
     },
-    startingWeapon: 'magicWand', // Canon
+    startingWeapon: 'canon',
     ability: "Habilidad: Nave de combate equilibrada.",
     description: "Una nave versátil, lista para cualquier misión."
   },
@@ -33,7 +24,7 @@ export const characters = [
       damage_bonus: 0,
       pickup_radius: 50,
     },
-    startingWeapon: 'garlic', // Onda de repulsion
+    startingWeapon: 'onda-de-repulsion',
     ability: "Habilidad: +50% de vida máxima en el casco.",
     description: "Lenta pero muy resistente. Ideal para aguantar flotas enemigas."
   },
@@ -47,7 +38,7 @@ export const characters = [
       damage_bonus: 0,
       pickup_radius: 60,
     },
-    startingWeapon: 'knives', // Arma de rayos unitarios
+    startingWeapon: 'arma-de-rayos-unitarios',
     ability: "Habilidad: +25% de velocidad de motor.",
     description: "Se mueve ágilmente por el campo de asteroides."
   },
@@ -61,7 +52,7 @@ export const characters = [
       damage_bonus: 0,
       pickup_radius: 100,
     },
-    startingWeapon: 'holyWater', // Explosion estelar
+    startingWeapon: 'explosion-estelar',
     ability: "Habilidad: Mayor radio de atracción de recursos.",
     description: "Su tecnología de atracción le da ventaja en la recolección."
   },
@@ -75,7 +66,7 @@ export const characters = [
       damage_bonus: 0.20,
       pickup_radius: 50,
     },
-    startingWeapon: 'whip', // Rayo horizontal
+    startingWeapon: 'rayo-horizontal',
     ability: "Habilidad: +20% de daño en todos los sistemas de armas.",
     description: "Un 'cañón de cristal', frágil pero increíblemente letal."
   }
