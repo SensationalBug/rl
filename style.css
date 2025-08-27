@@ -4,9 +4,96 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #0a0a2e;
+  background-color: #000;
+  color: white;
+  font-family: 'Arial', sans-serif;
 }
+
+#start-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  background-color: #000;
+  z-index: 100;
+}
+
+.blinking-text {
+  font-size: 2rem;
+  animation: blink 1.5s step-start 0s infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 canvas {
-  background-color: #000; /* Changed the temporary red to black */
+  background-color: #000;
   display: block;
+}
+
+/* --- Main Menu --- */
+#main-menu-screen {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.menu-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gold-counter {
+    font-size: 1.5rem;
+}
+
+.menu-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.menu-footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+}
+
+#main-menu-screen button {
+    background-color: #333;
+    color: white;
+    border: 2px solid #555;
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+#main-menu-screen button:hover {
+    background-color: #555;
+    border-color: #777;
+}
+
+#start-game-btn {
+    font-size: 2.5rem;
+    padding: 1.5rem 3rem;
 }
