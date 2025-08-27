@@ -284,6 +284,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
             enemies = enemies.filter(e => !e.isMarkedForDeletion);
             projectiles = projectiles.filter(p => !p.isMarkedForDeletion);
+            groundAreas = groundAreas.filter(a => !a.isMarkedForDeletion);
             xpGems.forEach(gem => {
                 if (Math.hypot(player.position.x - gem.position.x, player.position.y - gem.position.y) < player.pickupRadius) {
                     if (player.addXP(gem.value)) changeState('levelUp');
