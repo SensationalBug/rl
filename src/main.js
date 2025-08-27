@@ -5,6 +5,7 @@ import { Player } from './components/Player.js';
 import { Enemy } from './components/Enemy.js';
 import { Projectile } from './components/Projectile.js';
 import { XPGem } from './components/XPGem.js';
+import { GroundArea } from './components/GroundArea.js';
 import { enemyTypes } from './data/enemies.js';
 import { waveTimeline } from './data/waves.js';
 import { weapons } from './data/weapons.js';
@@ -35,7 +36,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, xpGems, gameState, gameTimer, spawnTimers;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, gameState, gameTimer, spawnTimers;
 
     /**
      * Sets the canvas dimensions to fill the window.
@@ -198,6 +199,7 @@ window.addEventListener('DOMContentLoaded', () => {
         keys = { up: { pressed: false }, down: { pressed: false }, left: { pressed: false }, right: { pressed: false } };
         enemies = [];
         projectiles = [];
+        groundAreas = [];
         xpGems = [];
         gameTimer = 0;
         spawnTimers = {};
@@ -229,8 +231,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     const radius = Math.max(canvas.width, canvas.height) * 0.7;
                     const x = player.position.x + Math.cos(angle) * radius;
                     const y = player.position.y + Math.sin(angle) * radius;
-                    enemies.push(new Enemy({ position: { x, y }, type: wave.type }));
-                    spawnTimers[index] = wave.rate;
+                    enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[wave.type] }));
                 }
             }
         });
@@ -311,16 +312,38 @@ window.addEventListener('DOMContentLoaded', () => {
         } else {
             const newAttacks = player.weapon.attack(player, enemies);
             newAttacks.forEach(attackData => {
-                // Check the type of attack and handle accordingly
                 if (attackData.type === 'projectile') {
                     projectiles.push(new Projectile(attackData));
+                } else if (attackData.type === 'aura') {
+                    enemies.forEach(enemy => {
+                        const dist = Math.hypot(attackData.position.x - enemy.position.x, attackData.position.y - enemy.position.y);
+                        if (dist < attackData.radius) {
+                            enemy.takeDamage(attackData.damage);
+                        }
+                    });
+                } else if (attackData.type === 'hitbox') {
+                    enemies.forEach(enemy => {
+                        const hitbox = {
+                            x: attackData.side === 'left' ? attackData.position.x - attackData.width : attackData.position.x,
+                            y: attackData.position.y - (attackData.height / 2),
+                            width: attackData.width,
+                            height: attackData.height
+                        };
+                        if (
+                            hitbox.x < enemy.position.x + enemy.width &&
+                            hitbox.x + hitbox.width > enemy.position.x &&
+                            hitbox.y < enemy.position.y + enemy.height &&
+                            hitbox.y + hitbox.height > enemy.position.y
+                        ) {
+                            enemy.takeDamage(attackData.damage);
+                        }
+                    });
+                } else if (attackData.type === 'ground_area') {
+                    groundAreas.push(new GroundArea(attackData));
                 } else {
-                    // Placeholder for other attack types (aura, hitbox, etc.)
-                    // This prevents the game from crashing with non-projectile weapons.
                     console.log(`Unhandled attack type: ${attackData.type}`);
                 }
             });
-            // Reset the cooldown by using the value from the weapon's stats
             player.attackCooldown = player.weapon.stats.cooldown;
         }
 
@@ -328,6 +351,7 @@ window.addEventListener('DOMContentLoaded', () => {
         xpGems.forEach(gem => gem.update(player));
         enemies.forEach(e => e.update(player));
         projectiles.forEach(p => p.update());
+        groundAreas.forEach(area => area.update(enemies));
 
         // Camera translation to follow player
         ctx.save();
@@ -336,21 +360,28 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.translate(-cameraX, -cameraY);
 
         // Draw all game objects relative to the camera
+        groundAreas.forEach(area => area.draw(ctx));
         xpGems.forEach(gem => gem.draw(ctx));
         enemies.forEach(e => e.draw(ctx));
         projectiles.forEach(p => p.draw(ctx));
         player.draw(ctx);
 
-        // --- Collision Detection ---
+        // --- Collision Detection & Post-update checks ---
         projectiles.forEach(proj => {
             enemies.forEach(enemy => {
+                if (enemy.isMarkedForDeletion) return;
                 const dist = Math.hypot(proj.position.x - enemy.position.x, proj.position.y - enemy.position.y);
                 if (dist < proj.radius + enemy.width / 2) {
                     proj.isMarkedForDeletion = true;
-                    enemy.isMarkedForDeletion = true;
-                    xpGems.push(new XPGem({ position: { ...enemy.position } }));
+                    enemy.takeDamage(proj.damage);
                 }
             });
+        });
+
+        enemies.forEach(enemy => {
+            if (enemy.isMarkedForDeletion) {
+                xpGems.push(new XPGem({ position: { ...enemy.position } }));
+            }
         });
 
         xpGems.forEach(gem => {
@@ -368,6 +399,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // --- UI & Cleanup ---
         drawUI();
         projectiles = projectiles.filter(p => !p.isMarkedForDeletion);
+        groundAreas = groundAreas.filter(a => !a.isMarkedForDeletion);
         enemies = enemies.filter(e => !e.isMarkedForDeletion);
         xpGems = xpGems.filter(g => !g.isMarkedForDeletion);
     }
