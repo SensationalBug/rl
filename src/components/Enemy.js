@@ -17,10 +17,9 @@ export class Enemy {
         ctx.fillStyle = this.color;
         ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
 
-        // Draw Health Bar only if damaged
-        if (this.health < this.maxHealth) {
-            const healthBarWidth = this.width;
-            const healthBarHeight = 5;
+        // Draw Health Bar
+        const healthBarWidth = this.width;
+        const healthBarHeight = 5;
             const healthBarX = this.position.x;
             const healthBarY = this.position.y - healthBarHeight - 2; // 2px above the enemy
 
@@ -33,7 +32,6 @@ export class Enemy {
             // Foreground
             ctx.fillStyle = 'green';
             ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
-        }
     }
 
     update(player) {
