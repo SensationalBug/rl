@@ -21,6 +21,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const mainMenuScreen = document.getElementById('main-menu-screen');
     const characterSelectionScreen = document.getElementById('character-selection-screen');
     const characterList = document.getElementById('character-list');
+    const gameContainer = document.getElementById('game-container');
+    const joystickBase = document.getElementById('joystick-base');
+    const joystickKnob = document.getElementById('joystick-knob');
 
     // --- Button References ---
     const startGameBtn = document.getElementById('start-game-btn');
@@ -33,6 +36,16 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // --- Game State & Core Variables ---
     let player, keys, enemies, projectiles, groundAreas, activeAuras, xpGems, gameState, gameTimer, spawnTimers;
+
+    // --- Joystick State ---
+    let joystick = {
+        active: false,
+        baseX: 0,
+        baseY: 0,
+        knobX: 0,
+        knobY: 0,
+        radius: 60, // Max distance the knob can move from the center
+    };
 
     /**
      * Sets the canvas dimensions to fill the window.
@@ -52,7 +65,7 @@ window.addEventListener('DOMContentLoaded', () => {
         startScreen.style.display = 'none';
         mainMenuScreen.style.display = 'none';
         characterSelectionScreen.style.display = 'none';
-        canvas.style.display = 'none';
+        gameContainer.style.display = 'none';
 
         // Show the correct screen based on the new state
         switch (gameState) {
@@ -67,7 +80,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'running':
             case 'levelUp':
-                canvas.style.display = 'block';
+                gameContainer.style.display = 'block';
                 break;
         }
     }
@@ -123,12 +136,11 @@ window.addEventListener('DOMContentLoaded', () => {
             spawnTimers[index] = wave.rate;
         });
 
-        // Assign starting weapon from character data
         player.weapon = weapons[character.startingWeapon];
         player.attackCooldown = player.weapon.stats.cooldown;
 
         changeState('running');
-        animate(); // Start the game loop
+        animate();
     }
 
     /**
@@ -147,9 +159,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     const radius = Math.max(canvas.width, canvas.height) * 0.7;
                     const x = player.position.x + Math.cos(angle) * radius;
                     const y = player.position.y + Math.sin(angle) * radius;
-                    // Correctly pass the enemy data object, not just the string key
                     enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[wave.type] }));
-                    spawnTimers[index] = wave.rate; // Reset spawn timer for this wave
+                    spawnTimers[index] = wave.rate;
                 }
             }
         });
@@ -174,14 +185,12 @@ window.addEventListener('DOMContentLoaded', () => {
      * Draws the in-game UI (XP bar, timer).
      */
     function drawUI() {
-        // XP Bar
         ctx.fillStyle = 'grey';
         ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
         ctx.fillStyle = 'cyan';
         const xpWidth = (player.xp / player.xpToNextLevel) * canvas.width;
         ctx.fillRect(0, canvas.height - 10, xpWidth > 0 ? xpWidth : 0, 10);
 
-        // Game Timer
         ctx.fillStyle = 'white';
         ctx.font = '30px Arial';
         ctx.textAlign = 'center';
@@ -197,27 +206,39 @@ window.addEventListener('DOMContentLoaded', () => {
     function animate() {
         requestAnimationFrame(animate);
 
-        // Pause animation if the game is not in a running state
         if (gameState === 'levelUp') {
             drawLevelUpScreen();
             return;
         }
         if (gameState !== 'running') return;
 
-        // --- Updates ---
         updateEnemySpawns();
 
-        // --- Drawing ---
         ctx.fillStyle = '#0a0a2e';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Player movement
+        // --- Player Movement ---
+        // Reset velocity. Keyboard or joystick will set it.
         player.velocity.x = 0;
         player.velocity.y = 0;
+        // Keyboard controls
         if (keys.up.pressed) player.velocity.y = -player.speed;
         if (keys.down.pressed) player.velocity.y = player.speed;
         if (keys.left.pressed) player.velocity.x = -player.speed;
         if (keys.right.pressed) player.velocity.x = player.speed;
+
+        // Joystick controls (will override keyboard if active)
+        if (joystick.active) {
+            const dx = joystick.knobX - joystick.baseX;
+            const dy = joystick.knobY - joystick.baseY;
+            const magnitude = Math.hypot(dx, dy);
+            if (magnitude > 0) {
+                player.velocity.x = (dx / magnitude) * player.speed;
+                player.velocity.y = (dy / magnitude) * player.speed;
+            }
+        }
+
+        // Normalize diagonal speed
         if (player.velocity.x !== 0 && player.velocity.y !== 0) {
             player.velocity.x /= Math.sqrt(2);
             player.velocity.y /= Math.sqrt(2);
@@ -231,10 +252,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 y: player.velocity.y / magnitude
             };
         }
-
         player.update();
 
-        // Weapon attack
+        // --- Weapon Attack ---
         if (player.attackCooldown > 0) {
             player.attackCooldown--;
         } else {
@@ -243,7 +263,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (attackData.type === 'projectile') {
                     projectiles.push(new Projectile(attackData));
                 } else if (attackData.type === 'aura') {
-                    activeAuras.push(new Aura({ ...attackData, duration: 5 })); // Short duration for a "pulse"
+                    activeAuras.push(new Aura({ ...attackData, duration: 5 }));
                 } else if (attackData.type === 'hitbox') {
                     enemies.forEach(enemy => {
                         const hitbox = {
@@ -270,26 +290,27 @@ window.addEventListener('DOMContentLoaded', () => {
             player.attackCooldown = player.weapon.stats.cooldown;
         }
 
-        // Update all game objects
+        // --- Update all game objects ---
         xpGems.forEach(gem => gem.update(player));
         enemies.forEach(e => e.update(player));
         projectiles.forEach(p => p.update());
         groundAreas.forEach(area => area.update(enemies));
         activeAuras.forEach(aura => aura.update(player.position));
 
-        // Camera translation to follow player
+        // --- Drawing ---
         ctx.save();
         const cameraX = player.position.x - canvas.width / 2 + player.width / 2;
         const cameraY = player.position.y - canvas.height / 2 + player.height / 2;
         ctx.translate(-cameraX, -cameraY);
 
-        // Draw all game objects relative to the camera
         groundAreas.forEach(area => area.draw(ctx));
         activeAuras.forEach(aura => aura.draw(ctx));
         xpGems.forEach(gem => gem.draw(ctx));
         enemies.forEach(e => e.draw(ctx));
         projectiles.forEach(p => p.draw(ctx));
         player.draw(ctx);
+
+        ctx.restore();
 
         // --- Collision Detection & Post-update checks ---
         projectiles.forEach(proj => {
@@ -308,7 +329,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (enemy.isMarkedForDeletion) return;
                 const dist = Math.hypot(aura.position.x - enemy.position.x, aura.position.y - enemy.position.y);
                 if (dist < aura.radius) {
-                    enemy.takeDamage(player.weapon.stats.damage / 60); // Apply damage over time
+                    enemy.takeDamage(player.weapon.stats.damage / 60);
                 }
             });
         });
@@ -328,8 +349,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 gem.isMarkedForDeletion = true;
             }
         });
-
-        ctx.restore(); // Reset camera transform
 
         // --- UI & Cleanup ---
         drawUI();
@@ -373,6 +392,61 @@ window.addEventListener('DOMContentLoaded', () => {
             setupCanvas();
         }
     });
+
+    // --- Touch Controls ---
+    gameContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (gameState !== 'running') return;
+
+        const touch = e.touches[0];
+        joystick.active = true;
+        joystick.baseX = touch.clientX;
+        joystick.baseY = touch.clientY;
+        joystick.knobX = touch.clientX;
+        joystick.knobY = touch.clientY;
+
+        joystickBase.style.display = 'block';
+        joystickKnob.style.display = 'block';
+        joystickBase.style.left = `${joystick.baseX}px`;
+        joystickBase.style.top = `${joystick.baseY}px`;
+        joystickKnob.style.left = `${joystick.knobX}px`;
+        joystickKnob.style.top = `${joystick.knobY}px`;
+    });
+
+    gameContainer.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!joystick.active) return;
+
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - joystick.baseX;
+        const deltaY = touch.clientY - joystick.baseY;
+        const distance = Math.hypot(deltaX, deltaY);
+
+        if (distance > joystick.radius) {
+            joystick.knobX = joystick.baseX + (deltaX / distance) * joystick.radius;
+            joystick.knobY = joystick.baseY + (deltaY / distance) * joystick.radius;
+        } else {
+            joystick.knobX = touch.clientX;
+            joystick.knobY = touch.clientY;
+        }
+        joystickKnob.style.left = `${joystick.knobX}px`;
+        joystickKnob.style.top = `${joystick.knobY}px`;
+    });
+
+    gameContainer.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (!joystick.active) return;
+
+        joystick.active = false;
+        joystickBase.style.display = 'none';
+        joystickKnob.style.display = 'none';
+
+        if (player) {
+            player.velocity.x = 0;
+            player.velocity.y = 0;
+        }
+    });
+
 
     // =================================================================================
     //                               INITIAL SCRIPT EXECUTION

@@ -34,9 +34,40 @@ body {
   }
 }
 
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: none; /* Hidden by default */
+}
+
 canvas {
   background-color: #000;
   display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Joystick --- */
+#joystick-base {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background-color: rgba(128, 128, 128, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%); /* Center on touch point */
+    pointer-events: none; /* Prevent joystick from blocking other events */
+}
+
+#joystick-knob {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    top: 45px; /* (150 - 60) / 2 */
+    left: 45px; /* (150 - 60) / 2 */
+    pointer-events: none;
 }
 
 /* --- Main Menu --- */

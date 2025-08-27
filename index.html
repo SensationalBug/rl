@@ -41,8 +41,15 @@
         <button id="char-select-back-btn" class="back-btn">Volver</button>
     </div>
 
-    <!-- Canvas del Juego: Donde ocurre la acción. -->
-    <canvas id="gameCanvas" style="display: none;"></canvas>
+    <!-- Contenedor del Juego: Envuelve el canvas y el joystick -->
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Joystick Virtual -->
+        <div id="joystick-base" style="display: none;">
+            <div id="joystick-knob"></div>
+        </div>
+    </div>
 
     <!-- Script principal del juego -->
     <script type="module" src="src/main.js"></script>
