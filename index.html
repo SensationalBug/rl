@@ -25,8 +25,26 @@
         </div>
         <div class="menu-footer">
             <button id="upgrades-btn">Mejoras</button>
+            <button id="characters-btn">Personajes</button>
+            <button id="weapons-btn">Armas</button>
             <button id="bestiary-btn">Bestiario</button>
         </div>
+    </div>
+
+    <div id="character-selection-screen" class="screen" style="display: none;">
+        <h1>Elige tu Personaje</h1>
+        <div id="character-list" class="selection-list">
+            <!-- Los personajes se insertarán aquí dinámicamente -->
+        </div>
+        <button id="char-select-back-btn" class="back-btn">Volver</button>
+    </div>
+
+    <div id="weapon-view-screen" class="screen" style="display: none;">
+        <h1>Arsenal de Armas</h1>
+        <div id="weapon-list" class="selection-list">
+            <!-- Las armas se insertarán aquí dinámicamente -->
+        </div>
+        <button id="weapon-view-back-btn" class="back-btn">Volver</button>
     </div>
 
     <canvas id="gameCanvas" style="display: none;"></canvas>
