@@ -7,6 +7,7 @@ export class Enemy {
         this.speed = type.speed;
         this.color = type.color;
         this.health = type.health;
+        this.xpValue = type.xpValue;
         this.isMarkedForDeletion = false;
     }
 

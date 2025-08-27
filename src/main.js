@@ -38,7 +38,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, gameState, gameTimer, spawnTimers;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, gameState, gameTimer, spawnTimers, randomXpOrbTimer;
 
     // --- Joystick State ---
     let joystick = { active: false, baseX: 0, baseY: 0, knobX: 0, knobY: 0, radius: 60 };
@@ -123,6 +123,7 @@ window.addEventListener('DOMContentLoaded', () => {
         gameTimer = 0;
         spawnTimers = {};
         waveTimeline.forEach((wave, i) => { spawnTimers[i] = wave.rate; });
+        randomXpOrbTimer = 300; // Spawn first random orb after 5 seconds
         changeState('running');
     }
 
@@ -185,6 +186,18 @@ window.addEventListener('DOMContentLoaded', () => {
         // 2. Handle game logic updates, which only happen when the game is 'running'.
         if (gameState === 'running') {
             updateEnemySpawns();
+
+            // --- Random XP Orb Spawning ---
+            if (--randomXpOrbTimer <= 0) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * (canvas.width * 0.5) + 100; // Spawn within a ring around the player
+                const position = {
+                    x: player.position.x + Math.cos(angle) * radius,
+                    y: player.position.y + Math.sin(angle) * radius,
+                };
+                xpGems.push(new XPGem({ position, value: 5 })); // Random orbs are worth more
+                randomXpOrbTimer = 300 + Math.random() * 300; // Spawn next orb in 5-10 seconds
+            }
 
             // --- Player Movement ---
             player.velocity.x = 0; player.velocity.y = 0;
@@ -260,6 +273,13 @@ window.addEventListener('DOMContentLoaded', () => {
                         p.isMarkedForDeletion = true;
                     }
                 });
+            });
+
+            // Spawn XP gems from defeated enemies
+            enemies.forEach(e => {
+                if (e.isMarkedForDeletion) {
+                    xpGems.push(new XPGem({ position: { ...e.position }, value: e.xpValue }));
+                }
             });
 
             enemies = enemies.filter(e => !e.isMarkedForDeletion);
