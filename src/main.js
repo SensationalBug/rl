@@ -15,7 +15,7 @@ import { weapons } from './data/weapons.js';
 import { characters } from './data/characters.js';
 import { passives } from './data/passives.js';
 import { globalUpgrades } from './data/globalUpgrades.js';
-import { loadPlayerData, getGold, addGold, getPlayerData } from './data/playerData.js';
+import { loadPlayerData, getGold, addGold, getPlayerData, savePlayerData } from './data/playerData.js';
 
 // =================================================================================
 //                                  GAME SETUP
