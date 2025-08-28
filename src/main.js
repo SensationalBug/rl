@@ -312,7 +312,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${Math.ceil(player.health)} / ${player.maxHealth}`, canvas.width / 2, healthBarY + healthBarHeight / 2);
+        ctx.fillText(`${Math.round(player.health)} / ${Math.round(player.maxHealth)}`, canvas.width / 2, healthBarY + healthBarHeight / 2);
     }
 
     function animate() {
