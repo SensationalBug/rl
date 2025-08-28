@@ -3,7 +3,7 @@ export const weapons = {
     'canon': {
         name: "Canon",
         description: "Dispara un proyectil de energía al enemigo más cercano.",
-        stats: { cooldown: 120, damage: 10, speed: 8, amount: 1, penetration: 1 },
+        stats: { cooldown: 120, damage: 5, speed: 8, amount: 1, penetration: 1 },
         upgrades: [
             { level: 2, description: "+1 Proyectil", apply: (stats) => { stats.amount += 1; } },
             { level: 3, description: "+15% Daño", apply: (stats) => { stats.damage *= 1.15; } },
@@ -33,7 +33,7 @@ export const weapons = {
     'arma-de-rayos-unitarios': {
         name: "Arma de rayos unitarios",
         description: "Lanza un rayo de energía en la dirección de la nave.",
-        stats: { cooldown: 80, damage: 15, speed: 12, amount: 1, penetration: 1 },
+        stats: { cooldown: 80, damage: 5, speed: 12, amount: 1, penetration: 1 },
         upgrades: [
             { level: 2, description: "+1 Proyectil", apply: (stats) => { stats.amount += 1; } },
             { level: 3, description: "+15% Daño", apply: (stats) => { stats.damage *= 1.15; } },
@@ -61,12 +61,12 @@ export const weapons = {
     'onda-de-repulsion': {
         name: "Onda de repulsion",
         description: "Genera un pulso de energía que daña a los enemigos cercanos.",
-        stats: { cooldown: 480, duration: 240, damage: 5, area: 100, slow: 0 }, // Cooldown = duration + downtime
+        stats: { cooldown: 480, duration: 240, damage: 10, area: 100, slow: 0 }, // Cooldown = duration + downtime
         upgrades: [
-            { level: 2, description: "+20% Área", apply: (stats) => { stats.area *= 1.20; } },
+            { level: 2, description: "+25% Área", apply: (stats) => { stats.area *= 1.25; } },
             { level: 3, description: "+20% Duración", apply: (stats) => { stats.duration *= 1.20; } },
             { level: 4, description: "-15% Enfriamiento", apply: (stats) => { stats.cooldown *= 0.85; } },
-            { level: 5, evolution: true, name: "Agujero blanco", description: "Duplica el daño y aumenta la ralentización al 50%.", apply: (stats) => { /* ... */ }}
+            { level: 5, evolution: true, name: "Agujero blanco", description: "Duplica el área del efecto y aumenta la ralentización.", apply: (stats) => { stats.area *= 2; }}
         ],
         attack: (player, weaponInstance, enemies) => {
             const stats = weaponInstance.getStats();
@@ -76,7 +76,7 @@ export const weapons = {
     'explosion-estelar': {
         name: "Explosion estelar",
         description: "Lanza un contenedor que crea un campo de energía dañino.",
-        stats: { cooldown: 180, damage: 8, duration: 300, area: 80, amount: 1 },
+        stats: { cooldown: 300, damage: 5, duration: 300, area: 80, amount: 1 },
         upgrades: [
             { level: 2, description: "+1 Contenedor", apply: (stats) => { stats.amount += 1; } },
             { level: 3, description: "+20% Área", apply: (stats) => { stats.area *= 1.20; } },
@@ -101,7 +101,7 @@ export const weapons = {
     'rayo-horizontal': {
         name: "Rayo horizontal",
         description: "Emite un rayo de energía a ambos lados de la nave.",
-        stats: { cooldown: 100, damage: 20, range: 120, amount: 1 },
+        stats: { cooldown: 100, damage: 15, range: 120, amount: 1 },
         upgrades: [
             { level: 2, description: "+15% Daño", apply: (stats) => { stats.damage *= 1.15; } },
             { level: 3, description: "Añade un rayo en otra dirección", apply: (stats) => { stats.amount += 1; } },

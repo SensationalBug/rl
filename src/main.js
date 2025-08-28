@@ -85,7 +85,13 @@ window.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'character-card';
             card.style.cursor = 'pointer';
-            card.innerHTML = `<img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img"><h2>${char.name}</h2><p>${char.description}</p><p class="ability">${char.ability}</p>`;
+            const startingWeaponName = weapons[char.startingWeapon].name;
+            card.innerHTML = `
+                <img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img">
+                <h2>${char.name}</h2>
+                <p>${char.description}</p>
+                <p class="ability">${char.ability}</p>
+                <p class="starting-weapon">Arma Inicial: <strong>${startingWeaponName}</strong></p>`;
             card.addEventListener('click', () => init(char));
             characterList.appendChild(card);
         });
