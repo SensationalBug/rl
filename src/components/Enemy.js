@@ -11,6 +11,7 @@ export class Enemy {
         this.damage = type.damage;
         this.xpValue = type.xpValue;
         this.isMarkedForDeletion = false;
+        this.slowMultiplier = 1; // 1 = no slow
     }
 
     draw(ctx) {
@@ -37,8 +38,12 @@ export class Enemy {
 
     update(player) {
         const angle = Math.atan2(player.position.y - this.position.y, player.position.x - this.position.x);
-        this.position.x += Math.cos(angle) * this.speed;
-        this.position.y += Math.sin(angle) * this.speed;
+        const currentSpeed = this.speed * this.slowMultiplier;
+        this.position.x += Math.cos(angle) * currentSpeed;
+        this.position.y += Math.sin(angle) * currentSpeed;
+
+        // Reset slow multiplier each frame, it will be re-applied by auras if necessary
+        this.slowMultiplier = 1;
     }
 
     takeDamage(amount) {

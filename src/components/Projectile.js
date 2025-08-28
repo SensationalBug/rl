@@ -1,8 +1,9 @@
 export class Projectile {
-    constructor({ position, velocity, damage }) {
+    constructor({ position, velocity, damage, sourceWeapon }) {
         this.position = position;
         this.velocity = velocity;
         this.damage = damage;
+        this.sourceWeapon = sourceWeapon;
         this.radius = 5;
         this.isMarkedForDeletion = false;
     }

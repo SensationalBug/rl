@@ -6,6 +6,7 @@ import { Enemy } from './components/Enemy.js';
 import { Projectile } from './components/Projectile.js';
 import { XPGem } from './components/XPGem.js';
 import { GroundArea } from './components/GroundArea.js';
+import { VisualEffect } from './components/VisualEffect.js';
 import { WeaponInstance } from './components/WeaponInstance.js';
 import { enemyTypes } from './data/enemies.js';
 import { waveTimeline } from './data/waves.js';
@@ -40,7 +41,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, gameState, gameTimer, spawnTimers, randomXpOrbTimer;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, gameState, gameTimer, spawnTimers, randomXpOrbTimer;
 
     // --- Input State ---
     let joystick = { active: false, baseX: 0, baseY: 0, knobX: 0, knobY: 0, radius: 60 };
@@ -141,7 +142,7 @@ window.addEventListener('DOMContentLoaded', () => {
         player = new Player(character);
         player.weapons.push(new WeaponInstance(character.startingWeapon));
         keys = { up: false, down: false, left: false, right: false };
-        enemies = []; projectiles = []; groundAreas = []; xpGems = [];
+        enemies = []; projectiles = []; groundAreas = []; xpGems = []; visualEffects = [];
         gameTimer = 0;
         spawnTimers = {};
         waveTimeline.forEach((wave, i) => { spawnTimers[i] = wave.rate; });
@@ -280,7 +281,12 @@ window.addEventListener('DOMContentLoaded', () => {
                         const stats = w.getStats();
                         enemies.forEach(enemy => {
                             const dist = Math.hypot(player.position.x - enemy.position.x, player.position.y - enemy.position.y);
-                            if (dist < stats.area) enemy.takeDamage(stats.damage / 60); // damage per frame
+                            if (dist < stats.area) {
+                                enemy.takeDamage(stats.damage / 60); // damage per frame
+                                if (stats.slow > 0) {
+                                    enemy.slowMultiplier = 1 - stats.slow;
+                                }
+                            }
                         });
                     }
                 } else if (w.cooldown <= 0) {
@@ -288,8 +294,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     newAttacks.forEach(attackData => {
                         if (attackData.type === 'projectile') projectiles.push(new Projectile(attackData));
                         else if (attackData.type === 'hitbox') {
+                            const hitbox = { x: attackData.side === 'left' ? player.position.x - attackData.width : player.position.x, y: player.position.y - (attackData.height / 2), width: attackData.width, height: attackData.height };
+                            visualEffects.push(new VisualEffect({ position: {x: hitbox.x, y: hitbox.y}, width: hitbox.width, height: hitbox.height, color: 'rgba(255, 255, 0, 0.5)' }));
                             enemies.forEach(enemy => {
-                                const hitbox = { x: attackData.side === 'left' ? player.position.x - attackData.width : player.position.x, y: player.position.y - (attackData.height / 2), width: attackData.width, height: attackData.height };
                                 if (hitbox.x < enemy.position.x + enemy.width && hitbox.x + hitbox.width > enemy.position.x && hitbox.y < enemy.position.y + enemy.height && hitbox.y + hitbox.height > enemy.position.y) enemy.takeDamage(attackData.damage);
                             });
                         } else if (attackData.type === 'ground_area') groundAreas.push(new GroundArea(attackData));
@@ -302,6 +309,7 @@ window.addEventListener('DOMContentLoaded', () => {
             enemies.forEach(e => e.update(player));
             projectiles.forEach(p => p.update());
             groundAreas.forEach(area => area.update(enemies));
+            visualEffects.forEach(v => v.update());
 
             // --- Collision Detection ---
             // Player-Enemy Collision
@@ -322,6 +330,16 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (dist < e.width / 2) { // Simple circle collision
                         e.takeDamage(p.damage);
                         p.isMarkedForDeletion = true;
+
+                        // Check for Hiper Canon explosion
+                        if (p.sourceWeapon.id === 'canon' && p.sourceWeapon.level >= 5) {
+                            groundAreas.push(new GroundArea({
+                                position: { ...e.position },
+                                radius: 40, // Explosion radius
+                                damage: p.damage * 0.5, // Explosion does 50% of projectile damage
+                                duration: 20 // Lasts for 1/3 of a second
+                            }));
+                        }
                     }
                 });
             });
@@ -336,6 +354,7 @@ window.addEventListener('DOMContentLoaded', () => {
             enemies = enemies.filter(e => !e.isMarkedForDeletion);
             projectiles = projectiles.filter(p => !p.isMarkedForDeletion);
             groundAreas = groundAreas.filter(a => !a.isMarkedForDeletion);
+            visualEffects = visualEffects.filter(v => !v.isMarkedForDeletion);
             xpGems.forEach(gem => {
                 if (Math.hypot(player.position.x - gem.position.x, player.position.y - gem.position.y) < player.pickupRadius) {
                     if (player.addXP(gem.value)) changeState('levelUp');
@@ -354,6 +373,7 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.translate(canvas.width / 2 - player.position.x, canvas.height / 2 - player.position.y);
 
             groundAreas.forEach(area => area.draw(ctx));
+            visualEffects.forEach(v => v.draw(ctx));
 
             // --- Draw Repulsion Wave Aura ---
             player.weapons.forEach(w => {
