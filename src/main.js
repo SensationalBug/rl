@@ -27,11 +27,13 @@ window.addEventListener('DOMContentLoaded', () => {
     const joystickKnob = document.getElementById('joystick-knob');
     const levelUpScreen = document.getElementById('level-up-screen');
     const upgradeCardsContainer = document.getElementById('upgrade-cards-container');
+    const gameOverScreen = document.getElementById('game-over-screen');
 
     // --- Button References ---
     const startGameBtn = document.getElementById('start-game-btn');
     const charactersBtn = document.getElementById('characters-btn');
     const charSelectBackBtn = document.getElementById('char-select-back-btn');
+    const restartBtn = document.getElementById('restart-btn');
 
     // --- Canvas Setup ---
     const canvas = document.getElementById('gameCanvas');
@@ -66,6 +68,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         levelUpScreen.style.display = (newState === 'levelUp') ? 'flex' : 'none';
         levelUpScreen.style.zIndex = (newState === 'levelUp') ? '110' : '0'; // Higher z-index for overlays
+
+        gameOverScreen.style.display = (newState === 'gameOver') ? 'flex' : 'none';
+        gameOverScreen.style.zIndex = (newState === 'gameOver') ? '120' : '0'; // Highest z-index
 
         // Special logic for level up screen
         if (newState === 'levelUp') {
@@ -196,6 +201,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // 2. Handle game logic updates, which only happen when the game is 'running'.
         if (gameState === 'running') {
+            if (player.health <= 0) {
+                changeState('gameOver');
+                return; // Stop the rest of the game logic from running
+            }
             updateEnemySpawns();
 
             // --- Random XP Orb Spawning ---
@@ -360,6 +369,7 @@ window.addEventListener('DOMContentLoaded', () => {
     startGameBtn.addEventListener('click', () => changeState('characterSelection'));
     charactersBtn.addEventListener('click', () => changeState('characterSelection'));
     charSelectBackBtn.addEventListener('click', () => changeState('mainMenu'));
+    restartBtn.addEventListener('click', () => changeState('mainMenu'));
 
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();

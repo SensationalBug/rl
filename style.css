@@ -253,3 +253,9 @@ canvas {
     background-color: #777;
     border-color: #999;
 }
+
+#game-over-screen {
+    justify-content: center;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.8);
+}

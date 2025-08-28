@@ -103,7 +103,8 @@ export class Player {
         this.health -= amount;
         this.iframeTimer = 60; // 1 second of invincibility
         if (this.health <= 0) {
-            console.log("GAME OVER"); // Placeholder for game over logic
+            this.health = 0;
+            // Game over state will be handled in the main game loop
         }
     }
 
