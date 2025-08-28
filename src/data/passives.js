@@ -29,12 +29,12 @@ export const passives = [
         }
     },
     {
-        id: 'heal_per_sec',
+        id: 'health_regen_percent',
         name: "Nanobots de Reparación",
-        description: "Repara 0.5 de vida por segundo.",
+        description: "Repara un 1% de la vida máxima por segundo.",
         apply: (player) => {
-            if (!player.health_regen) player.health_regen = 0;
-            player.health_regen += 0.5;
+            if (!player.healthRegenPercent) player.healthRegenPercent = 0;
+            player.healthRegenPercent += 0.01; // 1%
         }
     }
 ];

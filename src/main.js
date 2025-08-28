@@ -252,6 +252,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // --- Health Regeneration ---
+            if (player.healthRegenPercent > 0 && player.health < player.maxHealth) {
+                const regenAmount = (player.maxHealth * player.healthRegenPercent) / 60; // per-frame amount
+                player.health = Math.min(player.maxHealth, player.health + regenAmount);
+            }
+
             player.update();
 
             // --- Weapon Updates & Attacks ---
