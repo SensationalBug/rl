@@ -66,7 +66,11 @@ export const weapons = {
             { level: 2, description: "+25% Área", apply: (stats) => { stats.area *= 1.25; } },
             { level: 3, description: "+20% Duración", apply: (stats) => { stats.duration *= 1.20; } },
             { level: 4, description: "-15% Enfriamiento", apply: (stats) => { stats.cooldown *= 0.85; } },
-            { level: 5, evolution: true, name: "Agujero blanco", description: "Duplica el área del efecto y aumenta la ralentización.", apply: (stats) => { stats.area *= 2; }}
+            { level: 5, evolution: true, name: "Agujero blanco", description: "Duplica el área del efecto y aumenta la ralentización.", apply: (stats) => {
+                console.log(`Evolving to Agujero Blanco. Area before: ${stats.area}`);
+                stats.area *= 2;
+                console.log(`Area after: ${stats.area}`);
+            }}
         ],
         attack: (player, weaponInstance, enemies) => {
             const stats = weaponInstance.getStats();
