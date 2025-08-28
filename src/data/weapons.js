@@ -61,7 +61,7 @@ export const weapons = {
     'onda-de-repulsion': {
         name: "Onda de repulsion",
         description: "Genera un pulso de energía que daña a los enemigos cercanos.",
-        stats: { cooldown: 240, duration: 240, damage: 5, area: 100, slow: 0 },
+        stats: { cooldown: 480, duration: 240, damage: 5, area: 100, slow: 0 }, // Cooldown = duration + downtime
         upgrades: [
             { level: 2, description: "+20% Área", apply: (stats) => { stats.area *= 1.20; } },
             { level: 3, description: "+20% Duración", apply: (stats) => { stats.duration *= 1.20; } },

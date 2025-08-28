@@ -40,6 +40,9 @@ export class Player {
         this.level = 1;
         this.xp = 0;
         this.xpToNextLevel = 10;
+
+        // Combat
+        this.iframeTimer = 0; // Invincibility frames
     }
 
     draw(ctx) {
@@ -88,6 +91,20 @@ export class Player {
     update() {
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
+
+        if (this.iframeTimer > 0) {
+            this.iframeTimer--;
+        }
+    }
+
+    takeDamage(amount) {
+        if (this.iframeTimer > 0) return; // Invincible
+
+        this.health -= amount;
+        this.iframeTimer = 60; // 1 second of invincibility
+        if (this.health <= 0) {
+            console.log("GAME OVER"); // Placeholder for game over logic
+        }
     }
 
     addXP(amount) {

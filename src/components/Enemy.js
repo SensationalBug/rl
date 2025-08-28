@@ -8,6 +8,7 @@ export class Enemy {
         this.color = type.color;
         this.health = type.health;
         this.maxHealth = type.health; // Add maxHealth
+        this.damage = type.damage;
         this.xpValue = type.xpValue;
         this.isMarkedForDeletion = false;
     }

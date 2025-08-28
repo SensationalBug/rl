@@ -283,6 +283,17 @@ window.addEventListener('DOMContentLoaded', () => {
             groundAreas.forEach(area => area.update(enemies));
 
             // --- Collision Detection ---
+            // Player-Enemy Collision
+            enemies.forEach(e => {
+                const dx = player.position.x - e.position.x;
+                const dy = player.position.y - e.position.y;
+                const distance = Math.hypot(dx, dy);
+                if (distance < player.width / 2 + e.width / 2) {
+                    player.takeDamage(e.damage);
+                }
+            });
+
+            // Projectile-Enemy Collision
             projectiles.forEach(p => {
                 enemies.forEach(e => {
                     if (e.isMarkedForDeletion) return;
