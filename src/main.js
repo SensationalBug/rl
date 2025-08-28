@@ -117,23 +117,50 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function getUpgradeOptions() {
         const pool = [];
-        // Weapon Upgrades
+
+        // Weapon Upgrades & Evolutions
         player.weapons.forEach(w => {
-            const nextUp = w.baseData.upgrades[w.level - 1];
-            if(nextUp) pool.push({ type: 'weapon_upgrade', name: nextUp.evolution ? nextUp.name : `Mejorar ${w.getName()}`, description: nextUp.description, apply: () => w.levelUp() });
+            if (w.level < w.maxLevel -1) {
+                pool.push({
+                    type: 'weapon_upgrade',
+                    name: `Mejorar ${w.getName()}`,
+                    description: `Aumenta una estadística aleatoria para ${w.getName()}.`,
+                    apply: () => w.levelUp()
+                });
+            } else if (w.level === w.maxLevel - 1) {
+                const evolution = w.baseData.evolution;
+                pool.push({
+                    type: 'weapon_evolution',
+                    name: `Evolucionar: ${evolution.name}`,
+                    description: evolution.description,
+                    apply: () => w.evolve()
+                });
+            }
         });
+
         // New Weapons
         const ownedIds = player.weapons.map(w => w.id);
-        if(ownedIds.length < 6) Object.keys(weapons).filter(id => !ownedIds.includes(id)).forEach(id => pool.push({ type: 'new_weapon', name: `Nueva Arma: ${weapons[id].name}`, description: weapons[id].description, apply: () => player.weapons.push(new WeaponInstance(id)) }));
+        if (ownedIds.length < 6) {
+            Object.keys(weapons).filter(id => !ownedIds.includes(id)).forEach(id => {
+                pool.push({
+                    type: 'new_weapon',
+                    name: `Nueva Arma: ${weapons[id].name}`,
+                    description: weapons[id].description,
+                    apply: () => player.weapons.push(new WeaponInstance(id))
+                });
+            });
+        }
+
         // Passive Upgrades
         passives.forEach(p => {
             pool.push({
                 type: 'passive',
                 name: p.name,
                 description: p.description,
-                apply: () => p.apply(player) // Pass player object here
+                apply: () => p.apply(player)
             });
         });
+
         return pool.sort(() => 0.5 - Math.random()).slice(0, 4);
     }
 
@@ -195,6 +222,32 @@ window.addEventListener('DOMContentLoaded', () => {
         // Border
         ctx.strokeStyle = 'white';
         ctx.strokeRect(xpBarX, xpBarY, xpBarWidth, xpBarHeight);
+
+        // --- Health Bar ---
+        const healthBarYOffset = 10; // 10px above the XP bar
+        const healthBarHeight = 20;
+        const healthBarX = xpBarX;
+        const healthBarY = xpBarY - healthBarHeight - healthBarYOffset;
+
+        // Background
+        ctx.fillStyle = '#440000'; // Dark red
+        ctx.fillRect(healthBarX, healthBarY, xpBarWidth, healthBarHeight);
+
+        // Foreground
+        const healthPercentage = player.health / player.maxHealth;
+        ctx.fillStyle = '#00ff00'; // Bright green
+        ctx.fillRect(healthBarX, healthBarY, xpBarWidth * healthPercentage, healthBarHeight);
+
+        // Border
+        ctx.strokeStyle = 'white';
+        ctx.strokeRect(healthBarX, healthBarY, xpBarWidth, healthBarHeight);
+
+        // Text
+        ctx.font = '14px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${Math.ceil(player.health)} / ${player.maxHealth}`, canvas.width / 2, healthBarY + healthBarHeight / 2);
     }
 
     function animate() {
