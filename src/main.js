@@ -10,7 +10,7 @@ import { VisualEffect } from './components/VisualEffect.js';
 import { GoldBag } from './components/GoldBag.js';
 import { WeaponInstance } from './components/WeaponInstance.js';
 import { enemyTypes } from './data/enemies.js';
-import { waveTimeline } from './data/waves.js';
+import { maps } from './data/maps.js';
 import { weapons } from './data/weapons.js';
 import { characters } from './data/characters.js';
 import { passives } from './data/passives.js';
@@ -26,6 +26,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const mainMenuScreen = document.getElementById('main-menu-screen');
     const characterSelectionScreen = document.getElementById('character-selection-screen');
     const characterList = document.getElementById('character-list');
+    const mapSelectionScreen = document.getElementById('map-selection-screen');
+    const mapList = document.getElementById('map-list');
     const gameContainer = document.getElementById('game-container');
     const joystickBase = document.getElementById('joystick-base');
     const joystickKnob = document.getElementById('joystick-knob');
@@ -41,6 +43,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const charactersBtn = document.getElementById('characters-btn');
     const upgradesBtn = document.getElementById('upgrades-btn');
     const charSelectBackBtn = document.getElementById('char-select-back-btn');
+    const mapSelectBackBtn = document.getElementById('map-select-back-btn');
     const upgradesBackBtn = document.getElementById('upgrades-back-btn');
     const restartBtn = document.getElementById('restart-btn');
 
@@ -52,7 +55,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, spawnTimers, randomXpOrbTimer, goldBagSpawnTimer;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, spawnTimers, randomXpOrbTimer, goldBagSpawnTimer, selectedCharacter, selectedMap;
 
     // --- Input State ---
     let joystick = { active: false, baseX: 0, baseY: 0, knobX: 0, knobY: 0, radius: 60 };
@@ -75,6 +78,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         characterSelectionScreen.style.display = (newState === 'characterSelection') ? 'flex' : 'none';
         characterSelectionScreen.style.zIndex = (newState === 'characterSelection') ? '100' : '0';
+
+        mapSelectionScreen.style.display = (newState === 'mapSelection') ? 'flex' : 'none';
+        mapSelectionScreen.style.zIndex = (newState === 'mapSelection') ? '100' : '0';
 
         gameContainer.style.display = (newState === 'running' || newState === 'levelUp') ? 'block' : 'none';
 
@@ -124,7 +130,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 <p>${char.description}</p>
                 <p class="ability">${char.ability}</p>
                 <p class="starting-weapon">Arma Inicial: <strong>${startingWeaponName}</strong></p>`;
-            card.addEventListener('click', () => init(char));
+            card.addEventListener('click', () => {
+                populateMapSelectionScreen(char);
+                changeState('mapSelection');
+            });
             characterList.appendChild(card);
         });
     }
@@ -206,6 +215,19 @@ window.addEventListener('DOMContentLoaded', () => {
         return pool.sort(() => 0.5 - Math.random()).slice(0, 4);
     }
 
+    function populateMapSelectionScreen(character) {
+        selectedCharacter = character;
+        mapList.innerHTML = '';
+        maps.forEach(map => {
+            const card = document.createElement('div');
+            card.className = 'map-card'; // We'll need to style this
+            card.style.backgroundColor = map.backgroundColor;
+            card.innerHTML = `<h3>${map.name}</h3>`;
+            card.addEventListener('click', () => init(selectedCharacter, map));
+            mapList.appendChild(card);
+        });
+    }
+
     function applyGlobalUpgrades(player) {
         const playerData = getPlayerData();
         if (!playerData.globalUpgrades) return;
@@ -227,7 +249,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function init(character) {
+    function init(character, map) {
+        selectedMap = map;
         setupCanvas();
         player = new Player(character);
         applyGlobalUpgrades(player); // Apply upgrades to the player object
@@ -236,7 +259,7 @@ window.addEventListener('DOMContentLoaded', () => {
         enemies = []; projectiles = []; groundAreas = []; xpGems = []; visualEffects = []; goldBags = [];
         gameTimer = 0;
         spawnTimers = {};
-        waveTimeline.forEach((wave, i) => { spawnTimers[i] = wave.rate; });
+        selectedMap.waveTimeline.forEach((wave, i) => { spawnTimers[i] = wave.rate; });
         randomXpOrbTimer = 300; // Spawn first random orb after 5 seconds
         goldBagSpawnTimer = 600; // Spawn first gold bag after 10 seconds
         changeState('running');
@@ -246,7 +269,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (gameState !== 'running') return;
         gameTimer++;
         const gameTimeInSeconds = Math.floor(gameTimer / 60);
-        waveTimeline.forEach((wave, index) => {
+        selectedMap.waveTimeline.forEach((wave, index) => {
             if (gameTimeInSeconds >= wave.time && --spawnTimers[index] <= 0) {
                 const angle = Math.random() * Math.PI * 2;
                 const radius = Math.max(canvas.width, canvas.height) * 0.7;
@@ -506,7 +529,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. Handle all drawing, which happens for both 'running' and 'levelUp' states.
-        ctx.fillStyle = '#0a0a2e';
+        ctx.fillStyle = selectedMap ? selectedMap.backgroundColor : '#0a0a2e';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         if (player) {
@@ -635,6 +658,7 @@ window.addEventListener('DOMContentLoaded', () => {
         changeState('globalUpgrades');
     });
     charSelectBackBtn.addEventListener('click', () => changeState('mainMenu'));
+    mapSelectBackBtn.addEventListener('click', () => changeState('characterSelection'));
     upgradesBackBtn.addEventListener('click', () => changeState('mainMenu'));
     restartBtn.addEventListener('click', () => changeState('mainMenu'));
 
