@@ -105,13 +105,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function getUpgradeOptions() {
         const pool = [];
+        // Weapon Upgrades
         player.weapons.forEach(w => {
             const nextUp = w.baseData.upgrades[w.level - 1];
             if(nextUp) pool.push({ type: 'weapon_upgrade', name: nextUp.evolution ? nextUp.name : `Mejorar ${w.getName()}`, description: nextUp.description, apply: () => w.levelUp() });
         });
+        // New Weapons
         const ownedIds = player.weapons.map(w => w.id);
         if(ownedIds.length < 6) Object.keys(weapons).filter(id => !ownedIds.includes(id)).forEach(id => pool.push({ type: 'new_weapon', name: `Nueva Arma: ${weapons[id].name}`, description: weapons[id].description, apply: () => player.weapons.push(new WeaponInstance(id)) }));
-        passives.forEach(p => pool.push({ type: 'passive', ...p }));
+        // Passive Upgrades
+        passives.forEach(p => {
+            pool.push({
+                type: 'passive',
+                name: p.name,
+                description: p.description,
+                apply: () => p.apply(player) // Pass player object here
+            });
+        });
         return pool.sort(() => 0.5 - Math.random()).slice(0, 4);
     }
 
