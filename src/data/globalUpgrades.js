@@ -114,6 +114,14 @@ export const globalUpgrades = {
                 costs: [2000, 20000],
                 apply: (playerStats) => { playerStats.revives += 1; }
             },
+            'maxHealth': {
+                name: "Vida Máxima +15%",
+                costs: [1000, 5000, 10000],
+                apply: (playerStats) => {
+                    playerStats.maxHealth *= 1.15;
+                    playerStats.health *= 1.15;
+                }
+            },
             'speed': {
                 name: "Velocidad de Movimiento +10%",
                 costs: [1000, 5000],
