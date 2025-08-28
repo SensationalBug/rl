@@ -28,11 +28,6 @@ export class WeaponInstance {
     }
 
     levelUp() {
-        if (this.level >= this.baseData.upgrades.length) {
-            console.log(`${this.getName()} is already max level.`);
-            return;
-        }
-
         const upgrade = this.baseData.upgrades[this.level - 1];
         if (upgrade) {
             upgrade.apply(this.stats);
