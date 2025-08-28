@@ -206,9 +206,31 @@ window.addEventListener('DOMContentLoaded', () => {
         return pool.sort(() => 0.5 - Math.random()).slice(0, 4);
     }
 
+    function applyGlobalUpgrades(player) {
+        const playerData = getPlayerData();
+        if (!playerData.globalUpgrades) return;
+
+        for (const upgradeId in playerData.globalUpgrades) {
+            const level = playerData.globalUpgrades[upgradeId];
+            if (level === 0) continue;
+
+            const idParts = upgradeId.split('.');
+            if (idParts[0] !== 'player') continue; // Only process player upgrades here
+
+            const upgradeData = globalUpgrades.player.upgrades[idParts[1]];
+
+            if (upgradeData && upgradeData.apply) {
+                for (let i = 0; i < level; i++) {
+                    upgradeData.apply(player);
+                }
+            }
+        }
+    }
+
     function init(character) {
         setupCanvas();
         player = new Player(character);
+        applyGlobalUpgrades(player); // Apply upgrades to the player object
         player.weapons.push(new WeaponInstance(character.startingWeapon));
         keys = { up: false, down: false, left: false, right: false };
         enemies = []; projectiles = []; groundAreas = []; xpGems = []; visualEffects = []; goldBags = [];

@@ -35,6 +35,7 @@ export class Player {
         // Modifiers from passive upgrades
         this.cooldown_modifier = 1;
         this.healthRegenPercent = 0;
+        this.revives = 0;
 
         // Leveling properties
         this.level = 1;

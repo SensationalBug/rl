@@ -1,4 +1,6 @@
 import { weapons } from '../data/weapons.js';
+import { getPlayerData } from '../data/playerData.js';
+import { globalUpgrades } from '../data/globalUpgrades.js';
 
 export class WeaponInstance {
     constructor(weaponId) {
@@ -6,6 +8,28 @@ export class WeaponInstance {
         this.id = weaponId;
 
         this.stats = JSON.parse(JSON.stringify(this.baseData.stats));
+
+        // Apply global upgrades
+        const playerData = getPlayerData();
+        if (playerData.globalUpgrades) {
+            for (const upgradeId in playerData.globalUpgrades) {
+                const level = playerData.globalUpgrades[upgradeId];
+                if (level === 0) continue;
+
+                const idParts = upgradeId.split('.');
+                // Check if the upgrade is for this specific weapon
+                if (idParts[0] === 'weapons' && idParts[1] === this.id) {
+                    const upgradeKey = idParts[2];
+                    const upgradeDefinition = globalUpgrades.weapons[this.id].upgrades[upgradeKey];
+                    if (upgradeDefinition) {
+                        for (let i = 0; i < level; i++) {
+                            upgradeDefinition.apply(this.stats);
+                        }
+                    }
+                }
+            }
+        }
+
         this.level = 1;
         this.maxLevel = this.baseData.maxLevel;
         this.upgradeHistory = {}; // To track limited upgrades
