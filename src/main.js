@@ -14,6 +14,7 @@ import { waveTimeline } from './data/waves.js';
 import { weapons } from './data/weapons.js';
 import { characters } from './data/characters.js';
 import { passives } from './data/passives.js';
+import { globalUpgrades } from './data/globalUpgrades.js';
 import { loadPlayerData, getGold, addGold } from './data/playerData.js';
 
 // =================================================================================
@@ -32,11 +33,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const upgradeCardsContainer = document.getElementById('upgrade-cards-container');
     const gameOverScreen = document.getElementById('game-over-screen');
     const gameOverSummary = document.getElementById('game-over-summary');
+    const globalUpgradesScreen = document.getElementById('global-upgrades-screen');
+    const globalUpgradesContainer = document.getElementById('global-upgrades-container');
 
     // --- Button References ---
     const startGameBtn = document.getElementById('start-game-btn');
     const charactersBtn = document.getElementById('characters-btn');
+    const upgradesBtn = document.getElementById('upgrades-btn');
     const charSelectBackBtn = document.getElementById('char-select-back-btn');
+    const upgradesBackBtn = document.getElementById('upgrades-back-btn');
     const restartBtn = document.getElementById('restart-btn');
 
     // --- UI Elements ---
@@ -78,6 +83,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         gameOverScreen.style.display = (newState === 'gameOver') ? 'flex' : 'none';
         gameOverScreen.style.zIndex = (newState === 'gameOver') ? '120' : '0'; // Highest z-index
+
+        globalUpgradesScreen.style.display = (newState === 'globalUpgrades') ? 'flex' : 'none';
+        globalUpgradesScreen.style.zIndex = (newState === 'globalUpgrades') ? '100' : '0';
 
         // Special logic for level up screen
         if (newState === 'levelUp') {
@@ -508,11 +516,65 @@ window.addEventListener('DOMContentLoaded', () => {
         drawUI();
     }
 
+    function populateGlobalUpgradesScreen() {
+        globalUpgradesContainer.innerHTML = ''; // Clear previous content
+        const playerData = getPlayerData();
+
+        // Helper function to create level boxes
+        const createLevelBoxes = (maxLevels, currentLevel) => {
+            let boxesHTML = '';
+            for (let i = 0; i < maxLevels; i++) {
+                boxesHTML += `<div class="upgrade-level-box ${i < currentLevel ? 'unlocked' : ''}"></div>`;
+            }
+            return boxesHTML;
+        };
+
+        // Create categories (Weapons and Player)
+        for (const categoryKey in globalUpgrades) {
+            const category = globalUpgrades[categoryKey];
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'upgrade-category';
+
+            let categoryHTML = `<h2>${category.name}</h2>`;
+
+            for (const itemKey in category.upgrades) {
+                const item = category.upgrades[itemKey];
+                const upgradeId = `${categoryKey}.${itemKey}`;
+                const currentLevel = playerData.globalUpgrades[upgradeId] || 0;
+                const maxLevels = item.costs.length;
+                const isMaxed = currentLevel >= maxLevels;
+                const cost = isMaxed ? 'MAX' : `${item.costs[currentLevel]} Oro`;
+                const canAfford = !isMaxed && playerData.gold >= item.costs[currentLevel];
+
+                categoryHTML += `
+                    <div class="upgrade-item">
+                        <div class="upgrade-item-info">
+                            <p>${item.name}</p>
+                            <button class="buy-upgrade-btn" data-upgrade-id="${upgradeId}" ${isMaxed || !canAfford ? 'disabled' : ''}>
+                                ${cost}
+                            </button>
+                        </div>
+                        <div class="upgrade-levels">
+                            ${createLevelBoxes(maxLevels, currentLevel)}
+                        </div>
+                    </div>
+                `;
+            }
+            categoryDiv.innerHTML = categoryHTML;
+            globalUpgradesContainer.appendChild(categoryDiv);
+        }
+    }
+
     // Add all event listeners
     startScreen.addEventListener('click', () => changeState('mainMenu'));
     startGameBtn.addEventListener('click', () => changeState('characterSelection'));
     charactersBtn.addEventListener('click', () => changeState('characterSelection'));
+    upgradesBtn.addEventListener('click', () => {
+        populateGlobalUpgradesScreen();
+        changeState('globalUpgrades');
+    });
     charSelectBackBtn.addEventListener('click', () => changeState('mainMenu'));
+    upgradesBackBtn.addEventListener('click', () => changeState('mainMenu'));
     restartBtn.addEventListener('click', () => changeState('mainMenu'));
 
     window.addEventListener('keydown', (e) => {

@@ -259,3 +259,81 @@ canvas {
     text-align: center;
     background-color: rgba(0, 0, 0, 0.8);
 }
+
+/* --- Global Upgrades Screen --- */
+.upgrades-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 1200px;
+    padding: 1rem;
+}
+
+.upgrade-category {
+    background-color: #1a1a3e;
+    border: 2px solid #4a4a7f;
+    border-radius: 10px;
+    padding: 1.5rem;
+}
+
+.upgrade-category h2 {
+    margin-top: 0;
+    color: #ffc107;
+    text-align: center;
+    border-bottom: 1px solid #4a4a7f;
+    padding-bottom: 1rem;
+}
+
+.upgrade-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.upgrade-item-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.upgrade-item-info p {
+    margin: 0;
+}
+
+.upgrade-levels {
+    display: flex;
+    gap: 0.25rem;
+    height: 10px;
+}
+
+.upgrade-level-box {
+    flex: 1;
+    background-color: #333;
+    border: 1px solid #555;
+}
+
+.upgrade-level-box.unlocked {
+    background-color: #00e5ff;
+}
+
+.buy-upgrade-btn {
+    background-color: #333;
+    color: #ffc107;
+    border: 1px solid #ffc107;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.buy-upgrade-btn:hover:not(:disabled) {
+    background-color: #555;
+}
+
+.buy-upgrade-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    border-color: #555;
+    color: #555;
+}
