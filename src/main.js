@@ -7,12 +7,14 @@ import { Projectile } from './components/Projectile.js';
 import { XPGem } from './components/XPGem.js';
 import { GroundArea } from './components/GroundArea.js';
 import { VisualEffect } from './components/VisualEffect.js';
+import { GoldBag } from './components/GoldBag.js';
 import { WeaponInstance } from './components/WeaponInstance.js';
 import { enemyTypes } from './data/enemies.js';
 import { waveTimeline } from './data/waves.js';
 import { weapons } from './data/weapons.js';
 import { characters } from './data/characters.js';
 import { passives } from './data/passives.js';
+import { loadPlayerData, getGold, addGold } from './data/playerData.js';
 
 // =================================================================================
 //                                  GAME SETUP
@@ -29,6 +31,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const levelUpScreen = document.getElementById('level-up-screen');
     const upgradeCardsContainer = document.getElementById('upgrade-cards-container');
     const gameOverScreen = document.getElementById('game-over-screen');
+    const gameOverSummary = document.getElementById('game-over-summary');
 
     // --- Button References ---
     const startGameBtn = document.getElementById('start-game-btn');
@@ -36,12 +39,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const charSelectBackBtn = document.getElementById('char-select-back-btn');
     const restartBtn = document.getElementById('restart-btn');
 
+    // --- UI Elements ---
+    const goldCounter = mainMenuScreen.querySelector('.gold-counter');
+
     // --- Canvas Setup ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, gameState, gameTimer, spawnTimers, randomXpOrbTimer;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, spawnTimers, randomXpOrbTimer, goldBagSpawnTimer;
 
     // --- Input State ---
     let joystick = { active: false, baseX: 0, baseY: 0, knobX: 0, knobY: 0, radius: 60 };
@@ -78,6 +84,23 @@ window.addEventListener('DOMContentLoaded', () => {
             const options = getUpgradeOptions();
             populateLevelUpScreen(options);
         }
+
+        // Special logic for game over screen
+        if (newState === 'gameOver') {
+            const timeSurvived = Math.floor(gameTimer / 60); // seconds
+            const goldEarned = timeSurvived; // 1 gold per second
+            addGold(goldEarned);
+            gameOverSummary.textContent = `Sobreviviste ${timeSurvived} segundos y ganaste ${goldEarned} de oro.`;
+            updateGoldDisplay(); // Update the main menu counter in the background
+        }
+
+        if (newState === 'mainMenu') {
+            updateGoldDisplay();
+        }
+    }
+
+    function updateGoldDisplay() {
+        goldCounter.textContent = `Oro: ${getGold()}`;
     }
 
     function populateCharacterSelection() {
@@ -180,11 +203,12 @@ window.addEventListener('DOMContentLoaded', () => {
         player = new Player(character);
         player.weapons.push(new WeaponInstance(character.startingWeapon));
         keys = { up: false, down: false, left: false, right: false };
-        enemies = []; projectiles = []; groundAreas = []; xpGems = []; visualEffects = [];
+        enemies = []; projectiles = []; groundAreas = []; xpGems = []; visualEffects = []; goldBags = [];
         gameTimer = 0;
         spawnTimers = {};
         waveTimeline.forEach((wave, i) => { spawnTimers[i] = wave.rate; });
         randomXpOrbTimer = 300; // Spawn first random orb after 5 seconds
+        goldBagSpawnTimer = 600; // Spawn first gold bag after 10 seconds
         changeState('running');
     }
 
@@ -290,6 +314,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 randomXpOrbTimer = 300 + Math.random() * 300; // Spawn next orb in 5-10 seconds
             }
 
+            // --- Gold Bag Spawning ---
+            if (--goldBagSpawnTimer <= 0) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * (canvas.width * 0.5) + 100;
+                const position = {
+                    x: player.position.x + Math.cos(angle) * radius,
+                    y: player.position.y + Math.sin(angle) * radius,
+                };
+                goldBags.push(new GoldBag({ position, value: 25 }));
+                goldBagSpawnTimer = 900 + Math.random() * 600; // Spawn next bag in 15-25 seconds
+            }
+
             // --- Player Movement ---
             player.velocity.x = 0; player.velocity.y = 0;
             if (keys.up) player.velocity.y = -player.speed;
@@ -374,6 +410,7 @@ window.addEventListener('DOMContentLoaded', () => {
             projectiles.forEach(p => p.update());
             groundAreas.forEach(area => area.update(enemies));
             visualEffects.forEach(v => v.update());
+            // Gold bags don't have an update method, they are static
 
             // --- Collision Detection ---
             // Player-Enemy Collision
@@ -419,6 +456,7 @@ window.addEventListener('DOMContentLoaded', () => {
             projectiles = projectiles.filter(p => !p.isMarkedForDeletion);
             groundAreas = groundAreas.filter(a => !a.isMarkedForDeletion);
             visualEffects = visualEffects.filter(v => !v.isMarkedForDeletion);
+
             xpGems.forEach(gem => {
                 if (Math.hypot(player.position.x - gem.position.x, player.position.y - gem.position.y) < player.pickupRadius) {
                     if (player.addXP(gem.value)) changeState('levelUp');
@@ -426,6 +464,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
             xpGems = xpGems.filter(g => !g.isMarkedForDeletion);
+
+            goldBags.forEach(bag => {
+                if (Math.hypot(player.position.x - bag.position.x, player.position.y - bag.position.y) < player.pickupRadius) {
+                    addGold(bag.value);
+                    updateGoldDisplay();
+                    bag.isMarkedForDeletion = true;
+                }
+            });
+            goldBags = goldBags.filter(b => !b.isMarkedForDeletion);
         }
 
         // 3. Handle all drawing, which happens for both 'running' and 'levelUp' states.
@@ -451,6 +498,7 @@ window.addEventListener('DOMContentLoaded', () => {
             });
 
             xpGems.forEach(gem => gem.draw(ctx));
+            goldBags.forEach(b => b.draw(ctx));
             enemies.forEach(e => e.draw(ctx));
             projectiles.forEach(p => p.draw(ctx));
             player.draw(ctx);
@@ -542,6 +590,8 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initial setup
+    loadPlayerData();
+    updateGoldDisplay();
     populateCharacterSelection();
     changeState('startScreen');
     animate(); // Start the main game loop
