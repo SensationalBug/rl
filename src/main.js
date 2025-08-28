@@ -120,13 +120,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
         // Weapon Upgrades & Evolutions
         player.weapons.forEach(w => {
-            if (w.level < w.maxLevel -1) {
-                pool.push({
-                    type: 'weapon_upgrade',
-                    name: `Mejorar ${w.getName()}`,
-                    description: `Aumenta una estadística aleatoria para ${w.getName()}.`,
-                    apply: () => w.levelUp()
+            if (w.level < w.maxLevel - 1) {
+                // Get a specific, random upgrade from the weapon's pool
+                const availableUpgrades = w.baseData.upgradePool.filter(upgrade => {
+                    if (!upgrade.max) return true;
+                    const timesApplied = w.upgradeHistory[upgrade.description] || 0;
+                    return timesApplied < upgrade.max;
                 });
+
+                if (availableUpgrades.length > 0) {
+                    const randomUpgrade = availableUpgrades[Math.floor(Math.random() * availableUpgrades.length)];
+                    pool.push({
+                        type: 'weapon_upgrade',
+                        name: `Mejorar ${w.getName()}`,
+                        description: randomUpgrade.description,
+                        apply: () => w.applyUpgrade(randomUpgrade)
+                    });
+                }
+
             } else if (w.level === w.maxLevel - 1) {
                 const evolution = w.baseData.evolution;
                 pool.push({
