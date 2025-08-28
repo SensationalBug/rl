@@ -519,8 +519,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function populateGlobalUpgradesScreen() {
         globalUpgradesContainer.innerHTML = ''; // Clear previous content
         const playerData = getPlayerData();
+        if (!playerData.globalUpgrades) {
+            playerData.globalUpgrades = {}; // Ensure the upgrades object exists
+        }
 
-        // Helper function to create level boxes
         const createLevelBoxes = (maxLevels, currentLevel) => {
             let boxesHTML = '';
             for (let i = 0; i < maxLevels; i++) {
@@ -529,22 +531,19 @@ window.addEventListener('DOMContentLoaded', () => {
             return boxesHTML;
         };
 
-        // Create categories (Weapons and Player)
-        for (const categoryKey in globalUpgrades) {
-            const category = globalUpgrades[categoryKey];
+        const processCategory = (categoryData, categoryKey, container) => {
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'upgrade-category';
+            let categoryHTML = `<h2>${categoryData.name}</h2>`;
 
-            let categoryHTML = `<h2>${category.name}</h2>`;
-
-            for (const itemKey in category.upgrades) {
-                const item = category.upgrades[itemKey];
+            for (const itemKey in categoryData.upgrades) {
+                const item = categoryData.upgrades[itemKey];
                 const upgradeId = `${categoryKey}.${itemKey}`;
                 const currentLevel = playerData.globalUpgrades[upgradeId] || 0;
                 const maxLevels = item.costs.length;
                 const isMaxed = currentLevel >= maxLevels;
                 const cost = isMaxed ? 'MAX' : `${item.costs[currentLevel]} Oro`;
-                const canAfford = !isMaxed && playerData.gold >= item.costs[currentLevel];
+                const canAfford = !isMaxed && getGold() >= item.costs[currentLevel];
 
                 categoryHTML += `
                     <div class="upgrade-item">
@@ -557,12 +556,52 @@ window.addEventListener('DOMContentLoaded', () => {
                         <div class="upgrade-levels">
                             ${createLevelBoxes(maxLevels, currentLevel)}
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }
             categoryDiv.innerHTML = categoryHTML;
-            globalUpgradesContainer.appendChild(categoryDiv);
+            container.appendChild(categoryDiv);
+        };
+
+        // Process Player Upgrades
+        processCategory(globalUpgrades.player, 'player', globalUpgradesContainer);
+
+        // Process Weapon Upgrades (which are nested)
+        const weaponsCategoryDiv = document.createElement('div');
+        weaponsCategoryDiv.className = 'upgrade-category';
+        weaponsCategoryDiv.innerHTML = `<h2>Mejoras de Armas</h2>`;
+
+        for (const weaponKey in globalUpgrades.weapons) {
+            const weapon = globalUpgrades.weapons[weaponKey];
+            const weaponDiv = document.createElement('div');
+            weaponDiv.className = 'upgrade-weapon-group';
+            let weaponHTML = `<h3>${weapon.name}</h3>`;
+
+            for (const upgradeKey in weapon.upgrades) {
+                const upgrade = weapon.upgrades[upgradeKey];
+                const upgradeId = `weapons.${weaponKey}.${upgradeKey}`; // e.g., weapons.canon.damage
+                const currentLevel = playerData.globalUpgrades[upgradeId] || 0;
+                const maxLevels = upgrade.costs.length;
+                const isMaxed = currentLevel >= maxLevels;
+                const cost = isMaxed ? 'MAX' : `${upgrade.costs[currentLevel]} Oro`;
+                const canAfford = !isMaxed && getGold() >= upgrade.costs[currentLevel];
+
+                weaponHTML += `
+                    <div class="upgrade-item">
+                        <div class="upgrade-item-info">
+                            <p>${upgrade.name}</p>
+                            <button class="buy-upgrade-btn" data-upgrade-id="${upgradeId}" ${isMaxed || !canAfford ? 'disabled' : ''}>
+                                ${cost}
+                            </button>
+                        </div>
+                        <div class="upgrade-levels">
+                            ${createLevelBoxes(maxLevels, currentLevel)}
+                        </div>
+                    </div>`;
+            }
+            weaponDiv.innerHTML = weaponHTML;
+            weaponsCategoryDiv.appendChild(weaponDiv);
         }
+        globalUpgradesContainer.appendChild(weaponsCategoryDiv);
     }
 
     // Add all event listeners
@@ -576,6 +615,41 @@ window.addEventListener('DOMContentLoaded', () => {
     charSelectBackBtn.addEventListener('click', () => changeState('mainMenu'));
     upgradesBackBtn.addEventListener('click', () => changeState('mainMenu'));
     restartBtn.addEventListener('click', () => changeState('mainMenu'));
+
+    globalUpgradesContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('buy-upgrade-btn')) {
+            const button = e.target;
+            const upgradeId = button.dataset.upgradeId;
+            const idParts = upgradeId.split('.'); // e.g., ['weapons', 'canon', 'damage'] or ['player', 'speed']
+
+            let upgradeData;
+            if (idParts.length === 3) { // Weapon upgrade
+                upgradeData = globalUpgrades[idParts[0]][idParts[1]].upgrades[idParts[2]];
+            } else { // Player upgrade
+                upgradeData = globalUpgrades[idParts[0]].upgrades[idParts[1]];
+            }
+
+            if (!upgradeData) {
+                console.error(`Upgrade with ID ${upgradeId} not found.`);
+                return;
+            }
+
+            const playerData = getPlayerData();
+            const currentLevel = playerData.globalUpgrades[upgradeId] || 0;
+
+            if (currentLevel < upgradeData.costs.length) {
+                const cost = upgradeData.costs[currentLevel];
+                if (getGold() >= cost) {
+                    addGold(-cost); // Using addGold with a negative value to subtract
+                    playerData.globalUpgrades[upgradeId] = currentLevel + 1;
+                    savePlayerData();
+                    // Repopulate the screen to reflect the change
+                    populateGlobalUpgradesScreen();
+                    updateGoldDisplay(); // Also update gold on the main menu in the background
+                }
+            }
+        }
+    });
 
     window.addEventListener('keydown', (e) => {
         const key = e.key.toLowerCase();

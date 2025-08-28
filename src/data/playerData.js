@@ -64,7 +64,7 @@ export function getPlayerData() {
  * @param {number} amount - The amount of gold to add.
  */
 export function addGold(amount) {
-    if (amount <= 0) return;
+    if (amount === 0) return; // Allow for negative amounts (spending gold)
     playerData.gold += amount;
     savePlayerData();
 }
