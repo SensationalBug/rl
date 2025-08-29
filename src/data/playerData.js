@@ -4,7 +4,8 @@ const PLAYER_DATA_KEY = 'space_survivor_player_data';
 // Default data structure for a new player
 const defaultData = {
     gold: 0,
-    globalUpgrades: {}
+    globalUpgrades: {},
+    hasWonGame: false
 };
 
 // The cached player data object

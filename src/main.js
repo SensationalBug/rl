@@ -10,7 +10,6 @@ import { VisualEffect } from './components/VisualEffect.js';
 import { GoldBag } from './components/GoldBag.js';
 import { WeaponInstance } from './components/WeaponInstance.js';
 import { enemyTypes } from './data/enemies.js';
-import { maps } from './data/maps.js';
 import { weapons } from './data/weapons.js';
 import { characters } from './data/characters.js';
 import { passives } from './data/passives.js';
@@ -26,8 +25,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const mainMenuScreen = document.getElementById('main-menu-screen');
     const characterSelectionScreen = document.getElementById('character-selection-screen');
     const characterList = document.getElementById('character-list');
-    const mapSelectionScreen = document.getElementById('map-selection-screen');
-    const mapList = document.getElementById('map-list');
     const gameContainer = document.getElementById('game-container');
     const joystickBase = document.getElementById('joystick-base');
     const joystickKnob = document.getElementById('joystick-knob');
@@ -43,9 +40,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const charactersBtn = document.getElementById('characters-btn');
     const upgradesBtn = document.getElementById('upgrades-btn');
     const charSelectBackBtn = document.getElementById('char-select-back-btn');
-    const mapSelectBackBtn = document.getElementById('map-select-back-btn');
-    const upgradesBackBtn = document.getElementById('upgrades-back-btn');
     const restartBtn = document.getElementById('restart-btn');
+    const victoryBackBtn = document.getElementById('victory-back-btn');
+    const victoryScreen = document.getElementById('victory-screen');
 
     // --- UI Elements ---
     const goldCounter = mainMenuScreen.querySelector('.gold-counter');
@@ -55,7 +52,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, spawnTimers, randomXpOrbTimer, goldBagSpawnTimer, selectedCharacter, selectedMap;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, spawnTimer, waveCount, randomXpOrbTimer, goldBagSpawnTimer, bossSpawnPauseTimer;
+    const bossTimes = [300, 600, 900, 1200]; // 5, 10, 15, 20 minutes in seconds
+    let bossesSpawned = [false, false, false, false];
 
     // --- Input State ---
     let joystick = { active: false, baseX: 0, baseY: 0, knobX: 0, knobY: 0, radius: 60 };
@@ -79,9 +78,6 @@ window.addEventListener('DOMContentLoaded', () => {
         characterSelectionScreen.style.display = (newState === 'characterSelection') ? 'flex' : 'none';
         characterSelectionScreen.style.zIndex = (newState === 'characterSelection') ? '100' : '0';
 
-        mapSelectionScreen.style.display = (newState === 'mapSelection') ? 'flex' : 'none';
-        mapSelectionScreen.style.zIndex = (newState === 'mapSelection') ? '100' : '0';
-
         gameContainer.style.display = (newState === 'running' || newState === 'levelUp') ? 'block' : 'none';
 
         levelUpScreen.style.display = (newState === 'levelUp') ? 'flex' : 'none';
@@ -92,6 +88,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
         globalUpgradesScreen.style.display = (newState === 'globalUpgrades') ? 'flex' : 'none';
         globalUpgradesScreen.style.zIndex = (newState === 'globalUpgrades') ? '100' : '0';
+
+        victoryScreen.style.display = (newState === 'victory') ? 'flex' : 'none';
+        victoryScreen.style.zIndex = (newState === 'victory') ? '120' : '0';
 
         // Special logic for level up screen
         if (newState === 'levelUp') {
@@ -130,10 +129,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 <p>${char.description}</p>
                 <p class="ability">${char.ability}</p>
                 <p class="starting-weapon">Arma Inicial: <strong>${startingWeaponName}</strong></p>`;
-            card.addEventListener('click', () => {
-                populateMapSelectionScreen(char);
-                changeState('mapSelection');
-            });
+            card.addEventListener('click', () => init(char));
             characterList.appendChild(card);
         });
     }
@@ -215,18 +211,6 @@ window.addEventListener('DOMContentLoaded', () => {
         return pool.sort(() => 0.5 - Math.random()).slice(0, 4);
     }
 
-    function populateMapSelectionScreen(character) {
-        selectedCharacter = character;
-        mapList.innerHTML = '';
-        maps.forEach(map => {
-            const card = document.createElement('div');
-            card.className = 'map-card'; // We'll need to style this
-            card.style.backgroundColor = map.backgroundColor;
-            card.innerHTML = `<h3>${map.name}</h3>`;
-            card.addEventListener('click', () => init(selectedCharacter, map));
-            mapList.appendChild(card);
-        });
-    }
 
     function applyGlobalUpgrades(player) {
         const playerData = getPlayerData();
@@ -249,8 +233,24 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function init(character, map) {
-        selectedMap = map;
+    function getScaledStats(enemyType, gameTimeInSeconds) {
+        const wave = Math.floor(gameTimeInSeconds / 30);
+        const maxWaves = 28; // 14 minutes * 2 waves/minute
+        const currentWave = Math.min(wave, maxWaves);
+
+        const healthDamageMultiplier = 1 + (0.25 * currentWave);
+        const speedMultiplier = 1 + (0.05 * currentWave);
+
+        const baseStats = enemyTypes[enemyType];
+        return {
+            ...baseStats,
+            health: baseStats.health * healthDamageMultiplier,
+            damage: baseStats.damage * healthDamageMultiplier,
+            speed: baseStats.speed * speedMultiplier,
+        };
+    }
+
+    function init(character) {
         setupCanvas();
         player = new Player(character);
         applyGlobalUpgrades(player); // Apply upgrades to the player object
@@ -258,8 +258,10 @@ window.addEventListener('DOMContentLoaded', () => {
         keys = { up: false, down: false, left: false, right: false };
         enemies = []; projectiles = []; groundAreas = []; xpGems = []; visualEffects = []; goldBags = [];
         gameTimer = 0;
-        spawnTimers = {};
-        selectedMap.waveTimeline.forEach((wave, i) => { spawnTimers[i] = wave.rate; });
+        waveCount = 0;
+        spawnTimer = 1800; // 30 seconds
+        bossSpawnPauseTimer = 0;
+        bossesSpawned = [false, false, false, false];
         randomXpOrbTimer = 300; // Spawn first random orb after 5 seconds
         goldBagSpawnTimer = 600; // Spawn first gold bag after 10 seconds
         changeState('running');
@@ -268,17 +270,66 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateEnemySpawns() {
         if (gameState !== 'running') return;
         gameTimer++;
+
         const gameTimeInSeconds = Math.floor(gameTimer / 60);
-        selectedMap.waveTimeline.forEach((wave, index) => {
-            if (gameTimeInSeconds >= wave.time && --spawnTimers[index] <= 0) {
+
+        // --- Boss Spawning ---
+        for (let i = 0; i < bossTimes.length; i++) {
+            if (!bossesSpawned[i] && gameTimeInSeconds >= bossTimes[i]) {
+                bossesSpawned[i] = true;
+
+                // Pause regular spawns for 1 minute, except for the final boss
+                if (i < bossTimes.length - 1) {
+                    bossSpawnPauseTimer = 3600; // 60 seconds * 60 fps
+                }
+
+                const bossId = `boss${i + 1}`;
+                const waveForScaling = Math.floor(bossTimes[i] / 30);
+                let bossStats = getScaledStats('zombie', bossTimes[i]); // Get scaled stats for a basic enemy at the boss's spawn time
+
+                // Apply boss multiplier
+                const multiplier = (i === bossTimes.length - 1) ? 4 : 3;
+                bossStats.health *= multiplier;
+                bossStats.damage *= multiplier;
+                // Speed is not multiplied further, it's already scaled by getScaledStats
+
                 const angle = Math.random() * Math.PI * 2;
                 const radius = Math.max(canvas.width, canvas.height) * 0.7;
                 const x = player.position.x + Math.cos(angle) * radius;
                 const y = player.position.y + Math.sin(angle) * radius;
-                enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[wave.type] }));
-                spawnTimers[index] = wave.rate;
+                enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[bossId], stats: bossStats }));
+                break; // Spawn only one boss at a time
             }
-        });
+        }
+
+        // --- Regular Wave Spawning ---
+        if (bossSpawnPauseTimer > 0) {
+            bossSpawnPauseTimer--;
+            return; // Skip regular spawns while boss pause is active
+        }
+
+        // Stop all spawning after 20 minutes
+        if (gameTimeInSeconds >= 1200) {
+            return;
+        }
+
+        spawnTimer--;
+        if (spawnTimer <= 0) {
+            waveCount++;
+            spawnTimer = 1800; // Reset for next 30 seconds
+
+            const enemiesToSpawn = 5 + (waveCount * 2);
+            for (let i = 0; i < enemiesToSpawn; i++) {
+                const enemyType = Math.random() < 0.7 ? 'zombie' : 'bat';
+                const scaledStats = getScaledStats(enemyType, gameTimeInSeconds);
+
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.max(canvas.width, canvas.height) * 0.7;
+                const x = player.position.x + Math.cos(angle) * radius;
+                const y = player.position.y + Math.sin(angle) * radius;
+                enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[enemyType], stats: scaledStats }));
+            }
+        }
     }
 
     function drawUI() {
@@ -445,8 +496,10 @@ window.addEventListener('DOMContentLoaded', () => {
                 } else if (w.cooldown <= 0) {
                     const newAttacks = w.attack(player, enemies);
                     newAttacks.forEach(attackData => {
-                        if (attackData.type === 'projectile') projectiles.push(new Projectile(attackData));
-                        else if (attackData.type === 'hitbox') {
+                        if (attackData.type === 'projectile') {
+                            attackData.source = 'player'; // Tag player projectiles
+                            projectiles.push(new Projectile(attackData));
+                        } else if (attackData.type === 'hitbox') {
                             const hitbox = { x: attackData.side === 'left' ? player.position.x - attackData.width : player.position.x, y: player.position.y - (attackData.height / 2), width: attackData.width, height: attackData.height };
                             visualEffects.push(new VisualEffect({ position: {x: hitbox.x, y: hitbox.y}, width: hitbox.width, height: hitbox.height, color: 'rgba(255, 255, 0, 0.5)' }));
                             enemies.forEach(enemy => {
@@ -459,7 +512,17 @@ window.addEventListener('DOMContentLoaded', () => {
             });
 
             // --- Entity Updates & Cleanup ---
-            enemies.forEach(e => e.update(player));
+            enemies.forEach(e => {
+                e.update(player);
+                if (e.isBoss) {
+                    const attackDataArray = e.attack(player);
+                    if (attackDataArray.length > 0) {
+                        attackDataArray.forEach(attackData => {
+                            projectiles.push(new Projectile(attackData));
+                        });
+                    }
+                }
+            });
             projectiles.forEach(p => p.update());
             groundAreas.forEach(area => area.update(enemies));
             visualEffects.forEach(v => v.update());
@@ -478,30 +541,51 @@ window.addEventListener('DOMContentLoaded', () => {
 
             // Projectile-Enemy Collision
             projectiles.forEach(p => {
-                enemies.forEach(e => {
-                    if (e.isMarkedForDeletion) return;
-                    const dist = Math.hypot(p.position.x - e.position.x, p.position.y - e.position.y);
-                    if (dist < e.width / 2) { // Simple circle collision
-                        e.takeDamage(p.damage);
-                        p.isMarkedForDeletion = true;
+                if (p.isMarkedForDeletion) return;
 
-                        // Check for Hiper Canon explosion
-                        if (p.sourceWeapon.id === 'canon' && p.sourceWeapon.level >= 5) {
-                            groundAreas.push(new GroundArea({
-                                position: { ...e.position },
-                                radius: 40, // Explosion radius
-                                damage: p.damage * 0.5, // Explosion does 50% of projectile damage
-                                duration: 20 // Lasts for 1/3 of a second
-                            }));
+                if (p.source === 'player') {
+                    enemies.forEach(e => {
+                        if (e.isMarkedForDeletion) return;
+                        const dist = Math.hypot(p.position.x - e.position.x, p.position.y - e.position.y);
+                        if (dist < e.width / 2) { // Simple circle collision
+                            e.takeDamage(p.damage);
+                            p.isMarkedForDeletion = true;
+
+                            // Check for Hiper Canon explosion
+                            if (p.sourceWeapon && p.sourceWeapon.id === 'canon' && p.sourceWeapon.level >= 5) {
+                                groundAreas.push(new GroundArea({
+                                    position: { ...e.position },
+                                    radius: 40, // Explosion radius
+                                    damage: p.damage * 0.5, // Explosion does 50% of projectile damage
+                                    duration: 20 // Lasts for 1/3 of a second
+                                }));
+                            }
                         }
+                    });
+                } else if (p.source === 'enemy') {
+                    const dist = Math.hypot(p.position.x - player.position.x, p.position.y - player.position.y);
+                    if (dist < player.width / 2) {
+                        player.takeDamage(p.damage);
+                        p.isMarkedForDeletion = true;
                     }
-                });
+                }
             });
 
             // Spawn XP gems from defeated enemies
             enemies.forEach(e => {
                 if (e.isMarkedForDeletion) {
                     xpGems.push(new XPGem({ position: { ...e.position }, value: e.xpValue }));
+
+                    // Check for final boss victory
+                    if (e.type.id === 'boss4') {
+                        const playerData = getPlayerData();
+                        if (!playerData.hasWonGame) {
+                            addGold(1000);
+                            playerData.hasWonGame = true;
+                            savePlayerData();
+                        }
+                        changeState('victory');
+                    }
                 }
             });
 
@@ -529,7 +613,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. Handle all drawing, which happens for both 'running' and 'levelUp' states.
-        ctx.fillStyle = selectedMap ? selectedMap.backgroundColor : '#0a0a2e';
+        ctx.fillStyle = '#0a0a2e';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         if (player) {
@@ -658,9 +742,9 @@ window.addEventListener('DOMContentLoaded', () => {
         changeState('globalUpgrades');
     });
     charSelectBackBtn.addEventListener('click', () => changeState('mainMenu'));
-    mapSelectBackBtn.addEventListener('click', () => changeState('characterSelection'));
     upgradesBackBtn.addEventListener('click', () => changeState('mainMenu'));
     restartBtn.addEventListener('click', () => changeState('mainMenu'));
+    victoryBackBtn.addEventListener('click', () => changeState('mainMenu'));
 
     globalUpgradesContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('buy-upgrade-btn')) {

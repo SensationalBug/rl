@@ -40,15 +40,6 @@
         <button id="char-select-back-btn" class="back-btn">Volver</button>
     </div>
 
-    <!-- Pantalla de Selección de Mapa -->
-    <div id="map-selection-screen" class="screen">
-        <h1>Elige el Destino</h1>
-        <div id="map-list" class="selection-list">
-            <!-- Los mapas se insertarán aquí dinámicamente desde main.js -->
-        </div>
-        <button id="map-select-back-btn" class="back-btn">Volver</button>
-    </div>
-
     <!-- Contenedor del Juego: Envuelve el canvas y el joystick -->
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
@@ -82,6 +73,14 @@
             <!-- Las mejoras se insertarán aquí dinámicamente -->
         </div>
         <button id="upgrades-back-btn" class="back-btn">Volver</button>
+    </div>
+
+    <!-- Pantalla de Victoria -->
+    <div id="victory-screen" class="screen" style="display: none;">
+        <h1>¡Victoria!</h1>
+        <p>Has derrotado al jefe final y has sobrevivido.</p>
+        <p>¡Recibiste 1000 de oro por tu primera victoria!</p>
+        <button id="victory-back-btn" class="back-btn">Menú Principal</button>
     </div>
 
     <!-- Script principal del juego -->
