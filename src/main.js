@@ -37,6 +37,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const gameOverSummary = document.getElementById('game-over-summary');
     const globalUpgradesScreen = document.getElementById('global-upgrades-screen');
     const globalUpgradesContainer = document.getElementById('global-upgrades-container');
+    const pauseScreen = document.getElementById('pause-screen');
+    const pauseUpgradesList = document.getElementById('pause-upgrades-list');
 
     // --- Button References ---
     const startGameBtn = document.getElementById('start-game-btn');
@@ -48,6 +50,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const restartBtn = document.getElementById('restart-btn');
     const victoryBackBtn = document.getElementById('victory-back-btn');
     const victoryScreen = document.getElementById('victory-screen');
+    const pauseBtn = document.getElementById('pause-btn');
+    const resumeBtn = document.getElementById('resume-btn');
+    const exitGameBtn = document.getElementById('exit-game-btn');
 
     // --- UI Elements ---
     const goldCounter = mainMenuScreen.querySelector('.gold-counter');
@@ -93,19 +98,27 @@ window.addEventListener('DOMContentLoaded', () => {
         mapSelectionScreen.style.display = (newState === 'mapSelection') ? 'flex' : 'none';
         mapSelectionScreen.style.zIndex = (newState === 'mapSelection') ? '100' : '0';
 
-        gameContainer.style.display = (newState === 'running' || newState === 'levelUp') ? 'block' : 'none';
+        gameContainer.style.display = (newState === 'running' || newState === 'levelUp' || newState === 'paused') ? 'block' : 'none';
+        pauseBtn.style.display = (newState === 'running') ? 'block' : 'none';
 
         levelUpScreen.style.display = (newState === 'levelUp') ? 'flex' : 'none';
-        levelUpScreen.style.zIndex = (newState === 'levelUp') ? '110' : '0'; // Higher z-index for overlays
+        levelUpScreen.style.zIndex = (newState === 'levelUp') ? '110' : '0';
+
+        pauseScreen.style.display = (newState === 'paused') ? 'flex' : 'none';
+        pauseScreen.style.zIndex = (newState === 'paused') ? '110' : '0';
 
         gameOverScreen.style.display = (newState === 'gameOver') ? 'flex' : 'none';
-        gameOverScreen.style.zIndex = (newState === 'gameOver') ? '120' : '0'; // Highest z-index
+        gameOverScreen.style.zIndex = (newState === 'gameOver') ? '120' : '0';
 
         globalUpgradesScreen.style.display = (newState === 'globalUpgrades') ? 'flex' : 'none';
         globalUpgradesScreen.style.zIndex = (newState === 'globalUpgrades') ? '100' : '0';
 
         victoryScreen.style.display = (newState === 'victory') ? 'flex' : 'none';
         victoryScreen.style.zIndex = (newState === 'victory') ? '120' : '0';
+
+        if (newState === 'paused') {
+            populatePauseScreen();
+        }
 
         // Special logic for level up screen
         if (newState === 'levelUp') {
@@ -237,6 +250,31 @@ window.addEventListener('DOMContentLoaded', () => {
         });
 
         return pool.sort(() => 0.5 - Math.random()).slice(0, 4);
+    }
+
+    function populatePauseScreen() {
+        pauseUpgradesList.innerHTML = '';
+
+        // Display Weapons
+        const weaponsTitle = document.createElement('h3');
+        weaponsTitle.textContent = 'Armas';
+        pauseUpgradesList.appendChild(weaponsTitle);
+        player.weapons.forEach(w => {
+            const item = document.createElement('div');
+            item.textContent = `${w.getName()} - Nivel ${w.level}`;
+            pauseUpgradesList.appendChild(item);
+        });
+
+        // Display Passives
+        const passivesTitle = document.createElement('h3');
+        passivesTitle.textContent = 'Pasivas';
+        pauseUpgradesList.appendChild(passivesTitle);
+        // Assuming passives are stored in player.passives or similar
+        // This part needs to be adapted if passives are tracked differently
+        // For now, let's just put a placeholder
+        const placeholder = document.createElement('div');
+        placeholder.textContent = 'Registro de pasivas no implementado';
+        pauseUpgradesList.appendChild(placeholder);
     }
 
     function populateMapSelectionScreen() {
@@ -512,6 +550,12 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${Math.round(player.health)} / ${Math.round(player.maxHealth)}`, canvas.width / 2, healthBarY + healthBarHeight / 2);
+
+        // --- Level Indicator ---
+        ctx.font = '24px Arial';
+        ctx.fillStyle = 'gold';
+        ctx.textAlign = 'right';
+        ctx.fillText(`Nivel: ${player.level}`, xpBarX - 10, healthBarY + healthBarHeight / 2);
     }
 
     function animate() {
@@ -926,6 +970,9 @@ window.addEventListener('DOMContentLoaded', () => {
     upgradesBackBtn.addEventListener('click', () => changeState('mainMenu'));
     restartBtn.addEventListener('click', () => changeState('mainMenu'));
     victoryBackBtn.addEventListener('click', () => changeState('mainMenu'));
+    pauseBtn.addEventListener('click', () => changeState('paused'));
+    resumeBtn.addEventListener('click', () => changeState('running'));
+    exitGameBtn.addEventListener('click', () => changeState('mainMenu'));
 
     globalUpgradesContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('buy-upgrade-btn')) {

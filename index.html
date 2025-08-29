@@ -52,6 +52,7 @@
     <!-- Contenedor del Juego: Envuelve el canvas y el joystick -->
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
+        <button id="pause-btn" class="game-ui-btn">II</button>
 
         <!-- Joystick Virtual -->
         <div id="joystick-base" style="display: none;">
@@ -65,6 +66,21 @@
             <div id="upgrade-cards-container">
                 <!-- Las cartas de mejora se insertarán aquí dinámicamente -->
             </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Pausa -->
+    <div id="pause-screen" class="screen" style="display: none;">
+        <h1>Pausa</h1>
+        <div id="pause-upgrades-container">
+            <h2>Ventajas Actuales</h2>
+            <div id="pause-upgrades-list">
+                <!-- Las ventajas se insertarán aquí dinámicamente -->
+            </div>
+        </div>
+        <div class="pause-buttons">
+            <button id="resume-btn" class="back-btn">Reanudar</button>
+            <button id="exit-game-btn" class="back-btn">Salir de la Partida</button>
         </div>
     </div>
 
