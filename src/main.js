@@ -37,8 +37,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const gameOverSummary = document.getElementById('game-over-summary');
     const globalUpgradesScreen = document.getElementById('global-upgrades-screen');
     const globalUpgradesContainer = document.getElementById('global-upgrades-container');
-    const pauseScreen = document.getElementById('pause-screen');
-    const pauseUpgradesList = document.getElementById('pause-upgrades-list');
 
     // --- Button References ---
     const startGameBtn = document.getElementById('start-game-btn');
@@ -50,9 +48,6 @@ window.addEventListener('DOMContentLoaded', () => {
     const restartBtn = document.getElementById('restart-btn');
     const victoryBackBtn = document.getElementById('victory-back-btn');
     const victoryScreen = document.getElementById('victory-screen');
-    const pauseBtn = document.getElementById('pause-btn');
-    const resumeBtn = document.getElementById('resume-btn');
-    const exitGameBtn = document.getElementById('exit-game-btn');
 
     // --- UI Elements ---
     const goldCounter = mainMenuScreen.querySelector('.gold-counter');
@@ -62,14 +57,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, waveCount, randomXpOrbTimer, goldBagSpawnTimer, bossSpawnPauseTimer, selectedCharacter, selectedMap, isGranAtractorMode, granAtractorBossCount, granAtractorNextBossTimer, lastBossStats;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, waveCount, randomXpOrbTimer, goldBagSpawnTimer, bossSpawnPauseTimer, selectedCharacter, selectedMap;
     const bossTimes = [300, 600, 900, 1200]; // 5, 10, 15, 20 minutes in seconds
-    const granAtractorBossOrder = [
-        'boss1', 'boss5', 'boss6', 'boss7', 'boss8',       // Map 1 Bosses
-        'boss2', 'boss9', 'boss10', 'boss11', 'boss12',   // Map 2 Bosses
-        'boss3', 'boss13', 'boss14', 'boss15', 'boss16', // Map 3 Bosses
-        'boss4', 'boss17', 'boss18', 'boss19', 'boss20'  // Map 4 Bosses
-    ];
     let bossesSpawned = [false, false, false, false];
     let nextWaveTimer, nextEnemySpawnTimer, enemySpawnInterval, enemiesLeftToSpawn;
 
@@ -98,27 +87,19 @@ window.addEventListener('DOMContentLoaded', () => {
         mapSelectionScreen.style.display = (newState === 'mapSelection') ? 'flex' : 'none';
         mapSelectionScreen.style.zIndex = (newState === 'mapSelection') ? '100' : '0';
 
-        gameContainer.style.display = (newState === 'running' || newState === 'levelUp' || newState === 'paused') ? 'block' : 'none';
-        pauseBtn.style.display = (newState === 'running') ? 'block' : 'none';
+        gameContainer.style.display = (newState === 'running' || newState === 'levelUp') ? 'block' : 'none';
 
         levelUpScreen.style.display = (newState === 'levelUp') ? 'flex' : 'none';
-        levelUpScreen.style.zIndex = (newState === 'levelUp') ? '110' : '0';
-
-        pauseScreen.style.display = (newState === 'paused') ? 'flex' : 'none';
-        pauseScreen.style.zIndex = (newState === 'paused') ? '110' : '0';
+        levelUpScreen.style.zIndex = (newState === 'levelUp') ? '110' : '0'; // Higher z-index for overlays
 
         gameOverScreen.style.display = (newState === 'gameOver') ? 'flex' : 'none';
-        gameOverScreen.style.zIndex = (newState === 'gameOver') ? '120' : '0';
+        gameOverScreen.style.zIndex = (newState === 'gameOver') ? '120' : '0'; // Highest z-index
 
         globalUpgradesScreen.style.display = (newState === 'globalUpgrades') ? 'flex' : 'none';
         globalUpgradesScreen.style.zIndex = (newState === 'globalUpgrades') ? '100' : '0';
 
         victoryScreen.style.display = (newState === 'victory') ? 'flex' : 'none';
         victoryScreen.style.zIndex = (newState === 'victory') ? '120' : '0';
-
-        if (newState === 'paused') {
-            populatePauseScreen();
-        }
 
         // Special logic for level up screen
         if (newState === 'levelUp') {
@@ -146,12 +127,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function populateCharacterSelection() {
         characterList.innerHTML = '';
+        const unlockedCharacters = getPlayerData().unlockedCharacters;
         characters.forEach(char => {
             const card = document.createElement('div');
             card.className = 'character-card';
             const startingWeaponName = weapons[char.startingWeapon].name;
 
-            if (getPlayerData().unlockedCharacters.includes(char.id)) {
+            if (unlockedCharacters.includes(char.id)) {
                 card.style.cursor = 'pointer';
                 card.innerHTML = `
                     <img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img">
@@ -252,31 +234,6 @@ window.addEventListener('DOMContentLoaded', () => {
         return pool.sort(() => 0.5 - Math.random()).slice(0, 4);
     }
 
-    function populatePauseScreen() {
-        pauseUpgradesList.innerHTML = '';
-
-        // Display Weapons
-        const weaponsTitle = document.createElement('h3');
-        weaponsTitle.textContent = 'Armas';
-        pauseUpgradesList.appendChild(weaponsTitle);
-        player.weapons.forEach(w => {
-            const item = document.createElement('div');
-            item.textContent = `${w.getName()} - Nivel ${w.level}`;
-            pauseUpgradesList.appendChild(item);
-        });
-
-        // Display Passives
-        const passivesTitle = document.createElement('h3');
-        passivesTitle.textContent = 'Pasivas';
-        pauseUpgradesList.appendChild(passivesTitle);
-        // Assuming passives are stored in player.passives or similar
-        // This part needs to be adapted if passives are tracked differently
-        // For now, let's just put a placeholder
-        const placeholder = document.createElement('div');
-        placeholder.textContent = 'Registro de pasivas no implementado';
-        pauseUpgradesList.appendChild(placeholder);
-    }
-
     function populateMapSelectionScreen() {
         mapList.innerHTML = '';
         const unlockedMaps = getPlayerData().unlockedMaps;
@@ -347,14 +304,6 @@ window.addEventListener('DOMContentLoaded', () => {
         bossSpawnPauseTimer = 0;
         bossesSpawned = [false, false, false, false];
 
-        // --- Game Mode Specific ---
-        isGranAtractorMode = selectedMap.id === 'map5';
-        if (isGranAtractorMode) {
-            granAtractorBossCount = 0;
-            granAtractorNextBossTimer = 300; // First boss in 5 seconds
-            lastBossStats = null;
-        }
-
         // Wave Timers
         nextWaveTimer = 60; // First wave starts at 1 second
         nextEnemySpawnTimer = 0;
@@ -366,88 +315,36 @@ window.addEventListener('DOMContentLoaded', () => {
         changeState('running');
     }
 
-    function updateGranAtractor() {
-        granAtractorNextBossTimer--;
-
-        if (granAtractorNextBossTimer <= 0) {
-            if (granAtractorBossCount >= 20) {
-                // Final boss has been spawned, wait for it to be defeated.
-                return;
-            }
-
-            granAtractorBossCount++;
-            granAtractorNextBossTimer = 3600; // 60 seconds for the next boss
-
-            const bossBaseTypeKey = granAtractorBossOrder[granAtractorBossCount - 1]; // Use count - 1 for 0-based index
-            const bossBaseType = enemyTypes[bossBaseTypeKey];
-
-            let newStats;
-            if (lastBossStats === null) {
-                // First boss
-                newStats = { ...bossBaseType };
-            } else {
-                // Subsequent bosses
-                newStats = {
-                    ...lastBossStats,
-                    health: lastBossStats.health * 1.5,
-                    damage: lastBossStats.damage * 1.5,
-                    size: Math.min(300, lastBossStats.size * 1.1), // Cap size to prevent screen clutter
-                };
-            }
-            lastBossStats = newStats;
-
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.max(canvas.width, canvas.height) * 0.7;
-            const x = player.position.x + Math.cos(angle) * radius;
-            const y = player.position.y + Math.sin(angle) * radius;
-
-            // Important: Use the base type for behavior, but the new stats for power
-            enemies.push(new Enemy({ position: { x, y }, type: bossBaseType, stats: newStats }));
-        }
-    }
-
     function updateEnemySpawns() {
         if (gameState !== 'running') return;
         gameTimer++;
-
-        if (isGranAtractorMode) {
-            updateGranAtractor();
-        }
-
         nextWaveTimer--;
         nextEnemySpawnTimer--;
 
         const gameTimeInSeconds = Math.floor(gameTimer / 60);
 
-        // --- Boss Spawning (for normal maps) ---
-        if (!isGranAtractorMode) {
-            for (let i = 0; i < bossTimes.length; i++) {
-                if (!bossesSpawned[i] && gameTimeInSeconds >= bossTimes[i]) {
+        // --- Boss Spawning ---
+        for (let i = 0; i < bossTimes.length; i++) {
+            if (!bossesSpawned[i] && gameTimeInSeconds >= bossTimes[i]) {
                 bossesSpawned[i] = true;
-                bossSpawnPauseTimer = 300; // 5 second pause after any boss
-
-                let bossId;
-                const isFinalBossTime = i === bossTimes.length - 1;
-
-                if (isFinalBossTime) {
-                    bossId = selectedMap.finalBoss;
-                } else {
-                    const availableBosses = selectedMap.bossPool.filter(id => id !== selectedMap.finalBoss);
-                    bossId = availableBosses[Math.floor(Math.random() * availableBosses.length)];
+                if (i < bossTimes.length - 1) {
+                    bossSpawnPauseTimer = 3600; // 1 minute pause
                 }
 
-                if (bossId) {
-                    const bossType = enemyTypes[bossId];
-                    // We can apply scaling here if we want, for now, let's use base stats
-                    const angle = Math.random() * Math.PI * 2;
-                    const radius = Math.max(canvas.width, canvas.height) * 0.7;
-                    const x = player.position.x + Math.cos(angle) * radius;
-                    const y = player.position.y + Math.sin(angle) * radius;
-                    enemies.push(new Enemy({ position: { x, y }, type: bossType }));
-                }
+                const bossId = `boss${i + 1}`;
+                let bossStats = getScaledStats('spaceMinion', bossTimes[i]);
+                const multiplier = (i === bossTimes.length - 1) ? 4 : 3;
+                bossStats.health *= multiplier;
+                bossStats.damage *= multiplier;
+
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.max(canvas.width, canvas.height) * 0.7;
+                const x = player.position.x + Math.cos(angle) * radius;
+                const y = player.position.y + Math.sin(angle) * radius;
+                enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[bossId], stats: bossStats }));
                 break;
             }
-        }}
+        }
 
         // --- Regular Wave Spawning ---
         if (bossSpawnPauseTimer > 0) {
@@ -550,12 +447,6 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${Math.round(player.health)} / ${Math.round(player.maxHealth)}`, canvas.width / 2, healthBarY + healthBarHeight / 2);
-
-        // --- Level Indicator ---
-        ctx.font = '24px Arial';
-        ctx.fillStyle = 'gold';
-        ctx.textAlign = 'right';
-        ctx.fillText(`Nivel: ${player.level}`, xpBarX - 10, healthBarY + healthBarHeight / 2);
     }
 
     function animate() {
@@ -705,27 +596,12 @@ window.addEventListener('DOMContentLoaded', () => {
                                         enemies.push(new Enemy({ position, type: baseStats }));
                                     }
                                 }
-                            } else if (attackData.type === 'laser') {
-                                // Create a visual effect for the laser
-                                visualEffects.push(new VisualEffect({
-                                    position: { x: e.position.x + e.width / 2, y: e.position.y + e.height / 2 },
-                                    width: 2000, height: 10, color: 'rgba(255, 100, 100, 0.7)', duration: attackData.duration, angle: attackData.angle
-                                }));
-                                // Check for collision with the player
-                                const dx = player.position.x - (e.position.x + e.width / 2);
-                                const dy = player.position.y - (e.position.y + e.height / 2);
-                                const projectedDist = Math.abs(dx * Math.sin(attackData.angle) - dy * Math.cos(attackData.angle));
-                                if (projectedDist < player.width / 2 + 5) { // 5 is half laser width
-                                    player.takeDamage(attackData.damage);
-                                }
-                            } else if (attackData.type === 'ground_area') {
-                                groundAreas.push(new GroundArea(attackData));
                             }
                         });
                     }
                 }
             });
-            projectiles.forEach(p => p.update(player));
+            projectiles.forEach(p => p.update());
             groundAreas.forEach(area => area.update(enemies));
             visualEffects.forEach(v => v.update());
             // Gold bags don't have an update method, they are static
@@ -773,24 +649,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Spawn XP gems from defeated enemies and check for victory
+            // Spawn XP gems from defeated enemies
             enemies.forEach(e => {
                 if (e.isMarkedForDeletion) {
                     xpGems.push(new XPGem({ position: { ...e.position }, value: e.xpValue }));
 
                     // --- VICTORY CONDITION CHECK ---
-                    let victory = false;
-                    if (isGranAtractorMode) {
-                        // In Gran Atractor, victory is when the 20th boss is defeated and is the last enemy on screen.
-                        if (e.isBoss && granAtractorBossCount >= 20 && enemies.filter(en => !en.isMarkedForDeletion).length === 1) {
-                           victory = true;
-                        }
-                    } else if (selectedMap.finalBoss && e.type.id === selectedMap.finalBoss) {
-                        // Normal map victory
-                        victory = true;
-                    }
-
-                    if (victory) {
+                    if (selectedMap.finalBoss && e.type.id === selectedMap.finalBoss) {
                         const playerData = getPlayerData();
                         const currentMapIndex = maps.findIndex(m => m.id === selectedMap.id);
 
@@ -807,7 +672,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         }
 
                         // Grant gold for victory and save progress
-                        addGold(isGranAtractorMode ? 5000 : 1000); // More gold for the final challenge
+                        addGold(1000); // Using addGold handles saving automatically
                         changeState('victory');
                     }
                 }
@@ -970,9 +835,6 @@ window.addEventListener('DOMContentLoaded', () => {
     upgradesBackBtn.addEventListener('click', () => changeState('mainMenu'));
     restartBtn.addEventListener('click', () => changeState('mainMenu'));
     victoryBackBtn.addEventListener('click', () => changeState('mainMenu'));
-    pauseBtn.addEventListener('click', () => changeState('paused'));
-    resumeBtn.addEventListener('click', () => changeState('running'));
-    exitGameBtn.addEventListener('click', () => changeState('mainMenu'));
 
     globalUpgradesContainer.addEventListener('click', (e) => {
         if (e.target.classList.contains('buy-upgrade-btn')) {
