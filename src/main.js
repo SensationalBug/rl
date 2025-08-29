@@ -412,7 +412,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         if (isGranAtractorMode) {
             updateGranAtractor();
-            return;
         }
 
         nextWaveTimer--;
@@ -420,9 +419,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const gameTimeInSeconds = Math.floor(gameTimer / 60);
 
-        // --- Boss Spawning ---
-        for (let i = 0; i < bossTimes.length; i++) {
-            if (!bossesSpawned[i] && gameTimeInSeconds >= bossTimes[i]) {
+        // --- Boss Spawning (for normal maps) ---
+        if (!isGranAtractorMode) {
+            for (let i = 0; i < bossTimes.length; i++) {
+                if (!bossesSpawned[i] && gameTimeInSeconds >= bossTimes[i]) {
                 bossesSpawned[i] = true;
                 bossSpawnPauseTimer = 300; // 5 second pause after any boss
 
@@ -447,7 +447,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
                 break;
             }
-        }
+        }}
 
         // --- Regular Wave Spawning ---
         if (bossSpawnPauseTimer > 0) {
