@@ -358,7 +358,12 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             for (let i = 0; i < enemiesToSpawn; i++) {
-                const enemyTypeKey = selectedMap.allowedEnemies[Math.floor(Math.random() * selectedMap.allowedEnemies.length)];
+                let availableEnemies = selectedMap.allowedEnemies;
+                if (gameTimeInSeconds < 600) { // Less than 10 minutes
+                    availableEnemies = availableEnemies.slice(0, 2);
+                }
+
+                const enemyTypeKey = availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
                 const scaledStats = getScaledStats(enemyTypeKey, gameTimeInSeconds);
 
                 const angle = Math.random() * Math.PI * 2;
