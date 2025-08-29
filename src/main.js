@@ -57,7 +57,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, waveCount, randomXpOrbTimer, goldBagSpawnTimer, bossSpawnPauseTimer, selectedCharacter, selectedMap;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, waveCount, randomXpOrbTimer, goldBagSpawnTimer, bossSpawnPauseTimer, selectedCharacter, selectedMap, isGranAtractorMode, granAtractorBossCount, granAtractorNextBossTimer, lastBossStats;
     const bossTimes = [300, 600, 900, 1200]; // 5, 10, 15, 20 minutes in seconds
     let bossesSpawned = [false, false, false, false];
     let nextWaveTimer, nextEnemySpawnTimer, enemySpawnInterval, enemiesLeftToSpawn;
@@ -130,19 +130,28 @@ window.addEventListener('DOMContentLoaded', () => {
         characters.forEach(char => {
             const card = document.createElement('div');
             card.className = 'character-card';
-            card.style.cursor = 'pointer';
             const startingWeaponName = weapons[char.startingWeapon].name;
-            card.innerHTML = `
-                <img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img">
-                <h2>${char.name}</h2>
-                <p>${char.description}</p>
-                <p class="ability">${char.ability}</p>
-                <p class="starting-weapon">Arma Inicial: <strong>${startingWeaponName}</strong></p>`;
-            card.addEventListener('click', () => {
-                selectedCharacter = char;
-                populateMapSelectionScreen();
-                changeState('mapSelection');
-            });
+
+            if (getPlayerData().unlockedCharacters.includes(char.id)) {
+                card.style.cursor = 'pointer';
+                card.innerHTML = `
+                    <img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img">
+                    <h2>${char.name}</h2>
+                    <p>${char.description}</p>
+                    <p class="ability">${char.ability}</p>
+                    <p class="starting-weapon">Arma Inicial: <strong>${startingWeaponName}</strong></p>`;
+                card.addEventListener('click', () => {
+                    selectedCharacter = char;
+                    populateMapSelectionScreen();
+                    changeState('mapSelection');
+                });
+            } else {
+                card.classList.add('locked');
+                card.innerHTML = `
+                    <img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img" style="filter: grayscale(1) brightness(0.5);">
+                    <h2>${char.name}</h2>
+                    <p class="locked-text">BLOQUEADO</p>`;
+            }
             characterList.appendChild(card);
         });
     }
@@ -226,12 +235,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function populateMapSelectionScreen() {
         mapList.innerHTML = '';
+        const unlockedMaps = getPlayerData().unlockedMaps;
         maps.forEach(map => {
             const card = document.createElement('div');
             card.className = 'map-card';
             card.style.backgroundColor = map.backgroundColor;
 
-            if (map.unlocked) {
+            if (unlockedMaps.includes(map.id)) {
                 card.innerHTML = `<h3>${map.name}</h3>`;
                 card.addEventListener('click', () => init(selectedCharacter, map));
             } else {
@@ -293,6 +303,14 @@ window.addEventListener('DOMContentLoaded', () => {
         bossSpawnPauseTimer = 0;
         bossesSpawned = [false, false, false, false];
 
+        // --- Game Mode Specific ---
+        isGranAtractorMode = selectedMap.id === 'map5';
+        if (isGranAtractorMode) {
+            granAtractorBossCount = 0;
+            granAtractorNextBossTimer = 300; // First boss in 5 seconds
+            lastBossStats = null;
+        }
+
         // Wave Timers
         nextWaveTimer = 60; // First wave starts at 1 second
         nextEnemySpawnTimer = 0;
@@ -304,9 +322,55 @@ window.addEventListener('DOMContentLoaded', () => {
         changeState('running');
     }
 
+    function updateGranAtractor() {
+        granAtractorNextBossTimer--;
+
+        if (granAtractorNextBossTimer <= 0) {
+            if (granAtractorBossCount >= 20) {
+                // Final boss has been spawned, wait for it to be defeated.
+                return;
+            }
+
+            granAtractorBossCount++;
+            granAtractorNextBossTimer = 3600; // 60 seconds for the next boss
+
+            const bossBaseTypeKey = `boss${(granAtractorBossCount % 4) + 1}`;
+            const bossBaseType = enemyTypes[bossBaseTypeKey];
+
+            let newStats;
+            if (lastBossStats === null) {
+                // First boss
+                newStats = { ...bossBaseType };
+            } else {
+                // Subsequent bosses
+                newStats = {
+                    ...lastBossStats,
+                    health: lastBossStats.health * 1.5,
+                    damage: lastBossStats.damage * 1.5,
+                    size: Math.min(300, lastBossStats.size * 1.1), // Cap size to prevent screen clutter
+                };
+            }
+            lastBossStats = newStats;
+
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.max(canvas.width, canvas.height) * 0.7;
+            const x = player.position.x + Math.cos(angle) * radius;
+            const y = player.position.y + Math.sin(angle) * radius;
+
+            // Important: Use the base type for behavior, but the new stats for power
+            enemies.push(new Enemy({ position: { x, y }, type: bossBaseType, stats: newStats }));
+        }
+    }
+
     function updateEnemySpawns() {
         if (gameState !== 'running') return;
         gameTimer++;
+
+        if (isGranAtractorMode) {
+            updateGranAtractor();
+            return;
+        }
+
         nextWaveTimer--;
         nextEnemySpawnTimer--;
 
@@ -570,10 +634,21 @@ window.addEventListener('DOMContentLoaded', () => {
             enemies.forEach(e => {
                 e.update(player);
                 if (e.isBoss) {
-                    const attackDataArray = e.attack(player);
+                    const attackDataArray = e.attack(player, selectedMap);
                     if (attackDataArray.length > 0) {
                         attackDataArray.forEach(attackData => {
-                            projectiles.push(new Projectile(attackData));
+                            if (attackData.type === 'projectile') {
+                                projectiles.push(new Projectile(attackData));
+                            } else if (attackData.type === 'spawn') {
+                                const enemyTypeKey = attackData.enemyKey;
+                                const baseStats = enemyTypes[enemyTypeKey];
+                                if (baseStats) {
+                                    // Spawn the enemy near the boss
+                                    const spawnOffset = (Math.random() - 0.5) * 200;
+                                    const position = { x: e.position.x + spawnOffset, y: e.position.y + spawnOffset };
+                                    enemies.push(new Enemy({ position, type: baseStats }));
+                                }
+                            }
                         });
                     }
                 }
@@ -626,19 +701,41 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Spawn XP gems from defeated enemies
+            // Spawn XP gems from defeated enemies and check for victory
             enemies.forEach(e => {
                 if (e.isMarkedForDeletion) {
                     xpGems.push(new XPGem({ position: { ...e.position }, value: e.xpValue }));
 
-                    // Check for final boss victory
-                    if (e.type.id === 'boss4') {
-                        const playerData = getPlayerData();
-                        if (!playerData.hasWonGame) {
-                            addGold(1000);
-                            playerData.hasWonGame = true;
-                            savePlayerData();
+                    // --- VICTORY CONDITION CHECK ---
+                    let victory = false;
+                    if (isGranAtractorMode) {
+                        // In Gran Atractor, victory is when the 20th boss is defeated and is the last enemy on screen.
+                        if (e.isBoss && granAtractorBossCount >= 20 && enemies.filter(en => !en.isMarkedForDeletion).length === 1) {
+                           victory = true;
                         }
+                    } else if (selectedMap.finalBoss && e.type.id === selectedMap.finalBoss) {
+                        // Normal map victory
+                        victory = true;
+                    }
+
+                    if (victory) {
+                        const playerData = getPlayerData();
+                        const currentMapIndex = maps.findIndex(m => m.id === selectedMap.id);
+
+                        // Unlock next map
+                        const nextMap = maps[currentMapIndex + 1];
+                        if (nextMap && !playerData.unlockedMaps.includes(nextMap.id)) {
+                            playerData.unlockedMaps.push(nextMap.id);
+                        }
+
+                        // Unlock next character
+                        const nextCharacter = characters.find(c => !playerData.unlockedCharacters.includes(c.id));
+                        if (nextCharacter) {
+                            playerData.unlockedCharacters.push(nextCharacter.id);
+                        }
+
+                        // Grant gold for victory and save progress
+                        addGold(isGranAtractorMode ? 5000 : 1000); // More gold for the final challenge
                         changeState('victory');
                     }
                 }

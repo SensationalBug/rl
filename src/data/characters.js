@@ -3,6 +3,7 @@ export const characters = [
   {
     id: 1,
     name: "Vanguard",
+    unlocked: true,
     imageSrc: 'src/assets/ships/ship_1.png',
     stats: {
       health: 100,
@@ -17,6 +18,7 @@ export const characters = [
   {
     id: 2,
     name: "Odyssey",
+    unlocked: true,
     imageSrc: 'src/assets/ships/ship_2.png',
     stats: {
       health: 150,
@@ -31,6 +33,7 @@ export const characters = [
   {
     id: 3,
     name: "Nebula",
+    unlocked: false,
     imageSrc: 'src/assets/ships/ship_3.png',
     stats: {
       health: 80,
@@ -45,6 +48,7 @@ export const characters = [
   {
     id: 4,
     name: "Zenith",
+    unlocked: false,
     imageSrc: 'src/assets/ships/ship_4.png',
     stats: {
       health: 100,
@@ -59,6 +63,7 @@ export const characters = [
   {
     id: 5,
     name: "Chronos",
+    unlocked: false,
     imageSrc: 'src/assets/ships/ship_5.png',
     stats: {
       health: 60,
