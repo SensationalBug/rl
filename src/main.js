@@ -59,6 +59,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // --- Game State & Core Variables ---
     let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, waveCount, randomXpOrbTimer, goldBagSpawnTimer, bossSpawnPauseTimer, selectedCharacter, selectedMap, isGranAtractorMode, granAtractorBossCount, granAtractorNextBossTimer, lastBossStats;
     const bossTimes = [300, 600, 900, 1200]; // 5, 10, 15, 20 minutes in seconds
+    const granAtractorBossOrder = [
+        'boss1', 'boss5', 'boss6', 'boss7', 'boss8',       // Map 1 Bosses
+        'boss2', 'boss9', 'boss10', 'boss11', 'boss12',   // Map 2 Bosses
+        'boss3', 'boss13', 'boss14', 'boss15', 'boss16', // Map 3 Bosses
+        'boss4', 'boss17', 'boss18', 'boss19', 'boss20'  // Map 4 Bosses
+    ];
     let bossesSpawned = [false, false, false, false];
     let nextWaveTimer, nextEnemySpawnTimer, enemySpawnInterval, enemiesLeftToSpawn;
 
@@ -334,7 +340,7 @@ window.addEventListener('DOMContentLoaded', () => {
             granAtractorBossCount++;
             granAtractorNextBossTimer = 3600; // 60 seconds for the next boss
 
-            const bossBaseTypeKey = `boss${(granAtractorBossCount % 4) + 1}`;
+            const bossBaseTypeKey = granAtractorBossOrder[granAtractorBossCount - 1]; // Use count - 1 for 0-based index
             const bossBaseType = enemyTypes[bossBaseTypeKey];
 
             let newStats;
@@ -380,21 +386,27 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < bossTimes.length; i++) {
             if (!bossesSpawned[i] && gameTimeInSeconds >= bossTimes[i]) {
                 bossesSpawned[i] = true;
-                if (i < bossTimes.length - 1) {
-                    bossSpawnPauseTimer = 3600; // 1 minute pause
+                bossSpawnPauseTimer = 300; // 5 second pause after any boss
+
+                let bossId;
+                const isFinalBossTime = i === bossTimes.length - 1;
+
+                if (isFinalBossTime) {
+                    bossId = selectedMap.finalBoss;
+                } else {
+                    const availableBosses = selectedMap.bossPool.filter(id => id !== selectedMap.finalBoss);
+                    bossId = availableBosses[Math.floor(Math.random() * availableBosses.length)];
                 }
 
-                const bossId = `boss${i + 1}`;
-                let bossStats = getScaledStats('spaceMinion', bossTimes[i]);
-                const multiplier = (i === bossTimes.length - 1) ? 4 : 3;
-                bossStats.health *= multiplier;
-                bossStats.damage *= multiplier;
-
-                const angle = Math.random() * Math.PI * 2;
-                const radius = Math.max(canvas.width, canvas.height) * 0.7;
-                const x = player.position.x + Math.cos(angle) * radius;
-                const y = player.position.y + Math.sin(angle) * radius;
-                enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[bossId], stats: bossStats }));
+                if (bossId) {
+                    const bossType = enemyTypes[bossId];
+                    // We can apply scaling here if we want, for now, let's use base stats
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.max(canvas.width, canvas.height) * 0.7;
+                    const x = player.position.x + Math.cos(angle) * radius;
+                    const y = player.position.y + Math.sin(angle) * radius;
+                    enemies.push(new Enemy({ position: { x, y }, type: bossType }));
+                }
                 break;
             }
         }
@@ -634,26 +646,42 @@ window.addEventListener('DOMContentLoaded', () => {
             enemies.forEach(e => {
                 e.update(player);
                 if (e.isBoss) {
-                    const attackDataArray = e.attack(player, selectedMap);
+                    const attackDataArray = e.attack(player);
                     if (attackDataArray.length > 0) {
                         attackDataArray.forEach(attackData => {
                             if (attackData.type === 'projectile') {
                                 projectiles.push(new Projectile(attackData));
                             } else if (attackData.type === 'spawn') {
-                                const enemyTypeKey = attackData.enemyKey;
-                                const baseStats = enemyTypes[enemyTypeKey];
-                                if (baseStats) {
-                                    // Spawn the enemy near the boss
-                                    const spawnOffset = (Math.random() - 0.5) * 200;
-                                    const position = { x: e.position.x + spawnOffset, y: e.position.y + spawnOffset };
-                                    enemies.push(new Enemy({ position, type: baseStats }));
+                                for (let i = 0; i < attackData.count; i++) {
+                                    const enemyKey = selectedMap.allowedEnemies[Math.floor(Math.random() * selectedMap.allowedEnemies.length)];
+                                    const baseStats = enemyTypes[enemyKey];
+                                    if (baseStats) {
+                                        const spawnOffset = (Math.random() - 0.5) * 200;
+                                        const position = { x: e.position.x + spawnOffset, y: e.position.y + spawnOffset };
+                                        enemies.push(new Enemy({ position, type: baseStats }));
+                                    }
                                 }
+                            } else if (attackData.type === 'laser') {
+                                // Create a visual effect for the laser
+                                visualEffects.push(new VisualEffect({
+                                    position: { x: e.position.x + e.width / 2, y: e.position.y + e.height / 2 },
+                                    width: 2000, height: 10, color: 'rgba(255, 100, 100, 0.7)', duration: attackData.duration, angle: attackData.angle
+                                }));
+                                // Check for collision with the player
+                                const dx = player.position.x - (e.position.x + e.width / 2);
+                                const dy = player.position.y - (e.position.y + e.height / 2);
+                                const projectedDist = Math.abs(dx * Math.sin(attackData.angle) - dy * Math.cos(attackData.angle));
+                                if (projectedDist < player.width / 2 + 5) { // 5 is half laser width
+                                    player.takeDamage(attackData.damage);
+                                }
+                            } else if (attackData.type === 'ground_area') {
+                                groundAreas.push(new GroundArea(attackData));
                             }
                         });
                     }
                 }
             });
-            projectiles.forEach(p => p.update());
+            projectiles.forEach(p => p.update(player));
             groundAreas.forEach(area => area.update(enemies));
             visualEffects.forEach(v => v.update());
             // Gold bags don't have an update method, they are static
