@@ -40,6 +40,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const charactersBtn = document.getElementById('characters-btn');
     const upgradesBtn = document.getElementById('upgrades-btn');
     const charSelectBackBtn = document.getElementById('char-select-back-btn');
+    const upgradesBackBtn = document.getElementById('upgrades-back-btn');
     const restartBtn = document.getElementById('restart-btn');
     const victoryBackBtn = document.getElementById('victory-back-btn');
     const victoryScreen = document.getElementById('victory-screen');
