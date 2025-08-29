@@ -68,15 +68,19 @@ export class Enemy {
         if (this.isBoss) {
             this.bossStateTimer--;
             this.handleBossState(player);
-        }
 
-        if (this.bossState.includes('CHARGING') || this.bossState.includes('TELEPORTING')) {
-            // No movement during these states
+            if (this.bossState.includes('CHARGING') || this.bossState.includes('TELEPORTING')) {
+                // Boss does not move during these states
+            } else {
+                this.move(player);
+            }
+
+            this.attackCooldown--;
         } else {
+            // Regular enemy logic is simple
             this.move(player);
         }
 
-        if (this.isBoss) this.attackCooldown--;
         this.slowMultiplier = 1;
     }
 
