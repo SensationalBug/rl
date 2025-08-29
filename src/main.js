@@ -439,8 +439,14 @@ window.addEventListener('DOMContentLoaded', () => {
         // 2. Handle game logic updates, which only happen when the game is 'running'.
         if (gameState === 'running') {
             if (player.health <= 0) {
-                changeState('gameOver');
-                return; // Stop the rest of the game logic from running
+                if (player.revives > 0) {
+                    player.revives--;
+                    player.health = player.maxHealth;
+                    // Maybe add a visual/sound effect for revive here in the future
+                } else {
+                    changeState('gameOver');
+                    return; // Stop the rest of the game logic from running
+                }
             }
             updateEnemySpawns();
 
