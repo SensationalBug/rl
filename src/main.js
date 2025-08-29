@@ -57,9 +57,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
 
     // --- Game State & Core Variables ---
-    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, spawnTimer, waveCount, randomXpOrbTimer, goldBagSpawnTimer, bossSpawnPauseTimer, selectedCharacter, selectedMap;
+    let player, keys, enemies, projectiles, groundAreas, xpGems, visualEffects, goldBags, gameState, gameTimer, waveCount, randomXpOrbTimer, goldBagSpawnTimer, bossSpawnPauseTimer, selectedCharacter, selectedMap;
     const bossTimes = [300, 600, 900, 1200]; // 5, 10, 15, 20 minutes in seconds
     let bossesSpawned = [false, false, false, false];
+    let nextWaveTimer, nextEnemySpawnTimer, enemySpawnInterval, enemiesLeftToSpawn;
 
     // --- Input State ---
     let joystick = { active: false, baseX: 0, baseY: 0, knobX: 0, knobY: 0, radius: 60 };
@@ -289,9 +290,15 @@ window.addEventListener('DOMContentLoaded', () => {
         enemies = []; projectiles = []; groundAreas = []; xpGems = []; visualEffects = []; goldBags = [];
         gameTimer = 0;
         waveCount = 0;
-        spawnTimer = 60; // 1 second for the first wave
         bossSpawnPauseTimer = 0;
         bossesSpawned = [false, false, false, false];
+
+        // Wave Timers
+        nextWaveTimer = 60; // First wave starts at 1 second
+        nextEnemySpawnTimer = 0;
+        enemySpawnInterval = 0;
+        enemiesLeftToSpawn = 0;
+
         randomXpOrbTimer = 300; // Spawn first random orb after 5 seconds
         goldBagSpawnTimer = 600; // Spawn first gold bag after 10 seconds
         changeState('running');
@@ -300,6 +307,8 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateEnemySpawns() {
         if (gameState !== 'running') return;
         gameTimer++;
+        nextWaveTimer--;
+        nextEnemySpawnTimer--;
 
         const gameTimeInSeconds = Math.floor(gameTimer / 60);
 
@@ -307,71 +316,68 @@ window.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < bossTimes.length; i++) {
             if (!bossesSpawned[i] && gameTimeInSeconds >= bossTimes[i]) {
                 bossesSpawned[i] = true;
-
-                // Pause regular spawns for 1 minute, except for the final boss
                 if (i < bossTimes.length - 1) {
-                    bossSpawnPauseTimer = 3600; // 60 seconds * 60 fps
+                    bossSpawnPauseTimer = 3600; // 1 minute pause
                 }
 
                 const bossId = `boss${i + 1}`;
-                const waveForScaling = Math.floor(bossTimes[i] / 30);
-                // Use a standard enemy from the new list as the base for boss scaling
                 let bossStats = getScaledStats('spaceMinion', bossTimes[i]);
-
-                // Apply boss multiplier
                 const multiplier = (i === bossTimes.length - 1) ? 4 : 3;
                 bossStats.health *= multiplier;
                 bossStats.damage *= multiplier;
-                // Speed is not multiplied further, it's already scaled by getScaledStats
 
                 const angle = Math.random() * Math.PI * 2;
                 const radius = Math.max(canvas.width, canvas.height) * 0.7;
                 const x = player.position.x + Math.cos(angle) * radius;
                 const y = player.position.y + Math.sin(angle) * radius;
                 enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[bossId], stats: bossStats }));
-                break; // Spawn only one boss at a time
+                break;
             }
         }
 
         // --- Regular Wave Spawning ---
         if (bossSpawnPauseTimer > 0) {
             bossSpawnPauseTimer--;
-            return; // Skip regular spawns while boss pause is active
+            return;
         }
-
-        // Stop all spawning after 20 minutes
         if (gameTimeInSeconds >= 1200) {
             return;
         }
 
-        spawnTimer--;
-        if (spawnTimer <= 0) {
+        // --- New Wave Calculation ---
+        if (nextWaveTimer <= 0) {
             waveCount++;
-            spawnTimer = 1800; // Reset for next 30 seconds
+            nextWaveTimer = 1800; // 30 seconds
 
-            let enemiesToSpawn;
             if (waveCount <= 20) { // Up to minute 10
-                enemiesToSpawn = 30 + (waveCount - 1) * 30;
+                enemiesLeftToSpawn = 30 + (waveCount - 1) * 30;
             } else { // After minute 10
                 const baseEnemiesAt10Mins = 30 + (19 * 30);
-                enemiesToSpawn = baseEnemiesAt10Mins + (waveCount - 20) * 100;
+                enemiesLeftToSpawn = baseEnemiesAt10Mins + (waveCount - 20) * 100;
             }
 
-            for (let i = 0; i < enemiesToSpawn; i++) {
-                let availableEnemies = selectedMap.allowedEnemies;
-                if (gameTimeInSeconds < 600) { // Less than 10 minutes
-                    availableEnemies = availableEnemies.slice(0, 2);
-                }
+            enemySpawnInterval = 1800 / enemiesLeftToSpawn;
+            nextEnemySpawnTimer = 0;
+        }
 
-                const enemyTypeKey = availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
-                const scaledStats = getScaledStats(enemyTypeKey, gameTimeInSeconds);
+        // --- Gradual Enemy Spawning ---
+        if (nextEnemySpawnTimer <= 0 && enemiesLeftToSpawn > 0) {
+            nextEnemySpawnTimer += enemySpawnInterval;
+            enemiesLeftToSpawn--;
 
-                const angle = Math.random() * Math.PI * 2;
-                const radius = Math.max(canvas.width, canvas.height) * 0.7;
-                const x = player.position.x + Math.cos(angle) * radius;
-                const y = player.position.y + Math.sin(angle) * radius;
-                enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[enemyTypeKey], stats: scaledStats }));
+            let availableEnemies = selectedMap.allowedEnemies;
+            if (gameTimeInSeconds < 600) { // Less than 10 minutes
+                availableEnemies = availableEnemies.slice(0, 2);
             }
+
+            const enemyTypeKey = availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
+            const scaledStats = getScaledStats(enemyTypeKey, gameTimeInSeconds);
+
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.max(canvas.width, canvas.height) * 0.7;
+            const x = player.position.x + Math.cos(angle) * radius;
+            const y = player.position.y + Math.sin(angle) * radius;
+            enemies.push(new Enemy({ position: { x, y }, type: enemyTypes[enemyTypeKey], stats: scaledStats }));
         }
     }
 
