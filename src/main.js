@@ -395,10 +395,12 @@ window.addEventListener('DOMContentLoaded', () => {
     function drawUI() {
         if (!player) return;
 
+        const baseFontSize = canvas.width / 60; // Base font size scales with screen width
+
         // --- Game Timer ---
         const minutes = Math.floor(gameTimer / 3600).toString().padStart(2, '0');
         const seconds = Math.floor((gameTimer % 3600) / 60).toString().padStart(2, '0');
-        ctx.font = '30px Arial';
+        ctx.font = `${Math.max(20, baseFontSize)}px Arial`;
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.fillText(`${minutes}:${seconds}`, canvas.width / 2, 50);
@@ -442,7 +444,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.strokeRect(healthBarX, healthBarY, xpBarWidth, healthBarHeight);
 
         // Text
-        ctx.font = '14px Arial';
+        ctx.font = `${Math.max(12, baseFontSize * 0.7)}px Arial`;
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
