@@ -2,10 +2,7 @@ export class Enemy {
     constructor({ position, type, stats = null }) {
         this.position = position;
         this.type = type;
-
-        // Use provided stats for dynamic scaling, or fallback to the base type stats
         const currentStats = stats || type;
-
         this.width = currentStats.size;
         this.height = currentStats.size;
         this.speed = currentStats.speed;
@@ -16,142 +13,148 @@ export class Enemy {
         this.damage = currentStats.damage;
         this.xpValue = currentStats.xpValue;
         this.isBoss = currentStats.isBoss || false;
-
         this.isMarkedForDeletion = false;
-        this.slowMultiplier = 1; // 1 = no slow
+        this.slowMultiplier = 1;
+        this.isVisible = true;
 
         if (this.isBoss) {
-            this.attackCooldown = 0;
-            this.attackTimer = 120; // Attacks every 2 seconds
-            this.bossState = 'MOVING'; // MOVING, CHARGING, DASHING
+            this.attackCooldown = 120;
+            this.attackTimer = 180;
+            this.bossState = 'MOVING';
             this.bossStateTimer = 0;
             this.dashTarget = { x: 0, y: 0 };
+            this.laserAngle = 0;
         }
     }
 
     draw(ctx) {
-        // Draw the enemy
+        if (!this.isVisible) return;
         ctx.fillStyle = this.color;
         ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
-
-        // Draw Health Bar
-        const healthBarWidth = this.width;
-        const healthBarHeight = 5;
+        if (this.health < this.maxHealth) {
+            const healthBarWidth = this.width;
+            const healthBarHeight = 5;
             const healthBarX = this.position.x;
-            const healthBarY = this.position.y - healthBarHeight - 2; // 2px above the enemy
-
+            const healthBarY = this.position.y - healthBarHeight - 2;
             const healthPercentage = this.health / this.maxHealth;
-
-            // Background
             ctx.fillStyle = 'red';
             ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
-
-            // Foreground
             ctx.fillStyle = 'green';
             ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
+        }
+        if (this.bossState === 'CHARGING_LASER') {
+            ctx.beginPath();
+            ctx.moveTo(this.position.x + this.width / 2, this.position.y + this.height / 2);
+            ctx.lineTo(this.position.x + this.width / 2 + Math.cos(this.laserAngle) * 2000, this.position.y + this.height / 2 + Math.sin(this.laserAngle) * 2000);
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+            ctx.lineWidth = 10;
+            ctx.stroke();
+            ctx.lineWidth = 1;
+        }
     }
 
     update(player) {
-        if (this.isBoss && this.type.id === 'boss4' && this.bossState !== 'DASHING') {
+        if (this.isBoss) {
             this.bossStateTimer--;
-            if (this.bossState === 'CHARGING') {
-                if (this.bossStateTimer <= 0) {
-                    this.bossState = 'DASHING';
-                    this.bossStateTimer = 60; // Dash duration
-                    this.color = this.originalColor;
-                }
-                // Don't move while charging
-                return;
+            this.handleBossState(player);
+            if (this.bossState.includes('CHARGING') || this.bossState.includes('TELEPORTING')) {
+                // No movement
+            } else {
+                this.move(player);
             }
-            if (this.bossStateTimer <= 0) {
-                this.bossState = 'CHARGING';
-                this.bossStateTimer = 90; // Charge duration
-                this.color = 'white'; // Charge indicator
-                this.dashTarget = { ...player.position };
+            this.attackCooldown--;
+        } else {
+            this.move(player);
+        }
+        this.slowMultiplier = 1;
+    }
+
+    handleBossState(player) {
+        const teleporterIds = ['boss6', 'boss10', 'boss14', 'boss18'];
+        const laserIds = ['boss5', 'boss9', 'boss13', 'boss17'];
+        if (teleporterIds.includes(this.type.id)) {
+            if (this.bossState === 'MOVING' && this.bossStateTimer <= 0) {
+                this.bossState = 'TELEPORTING_OUT'; this.bossStateTimer = 30;
+            } else if (this.bossState === 'TELEPORTING_OUT' && this.bossStateTimer <= 0) {
+                this.isVisible = false;
+                this.position.x = player.position.x + (Math.random() - 0.5) * 800;
+                this.position.y = player.position.y + (Math.random() - 0.5) * 800;
+                this.bossState = 'TELEPORTING_IN'; this.bossStateTimer = 30;
+            } else if (this.bossState === 'TELEPORTING_IN' && this.bossStateTimer <= 0) {
+                this.isVisible = true; this.bossState = 'MOVING'; this.bossStateTimer = 240;
             }
         }
-
-        const target = (this.isBoss && this.bossState === 'DASHING') ? this.dashTarget : player.position;
-        const angle = Math.atan2(target.y - this.position.y, target.x - this.position.x);
-        let currentSpeed = this.speed * this.slowMultiplier;
-
-        if (this.isBoss && this.bossState === 'DASHING') {
-            currentSpeed *= 3; // Dash speed
-            this.bossStateTimer--;
-            if (this.bossStateTimer <= 0) {
+        if (laserIds.includes(this.type.id)) {
+            if (this.bossState === 'MOVING' && this.attackCooldown <= 60 && this.attackCooldown > 0) {
+                this.bossState = 'CHARGING_LASER';
+                this.laserAngle = Math.atan2(player.position.y - this.position.y, player.position.x - this.position.x);
+            } else if (this.bossState === 'CHARGING_LASER' && this.attackCooldown <= 0) {
                 this.bossState = 'MOVING';
             }
         }
+        if (this.type.id === 'boss2') {
+             if (this.bossState === 'MOVING' && this.bossStateTimer <= 0) {
+                this.bossState = 'CHARGING'; this.bossStateTimer = 90; this.color = 'white';
+                this.dashTarget = { ...player.position };
+            } else if (this.bossState === 'CHARGING' && this.bossStateTimer <= 0) {
+                this.bossState = 'DASHING'; this.bossStateTimer = 60; this.color = this.originalColor;
+            } else if (this.bossState === 'DASHING' && this.bossStateTimer <= 0) {
+                this.bossState = 'MOVING'; this.bossStateTimer = 300;
+            }
+        }
+        if (this.type.id === 'boss4') {
+            const auraRadius = this.width * 1.5;
+            if (Math.hypot(player.position.x - this.position.x, player.position.y - this.position.y) < auraRadius) {
+                player.takeDamage(this.damage * 0.1 / 60);
+            }
+        }
+    }
 
+    move(player){
+        let target = player.position;
+        let currentSpeed = this.speed * this.slowMultiplier;
+        if (this.isBoss && this.bossState === 'DASHING' && this.type.id === 'boss2') {
+            target = this.dashTarget;
+            currentSpeed *= 4;
+        }
+        const angle = Math.atan2(target.y - this.position.y, target.x - this.position.x);
         this.position.x += Math.cos(angle) * currentSpeed;
         this.position.y += Math.sin(angle) * currentSpeed;
-
-        if (this.isBoss) {
-            this.attackCooldown--;
-        }
-
-        // Reset slow multiplier each frame, it will be re-applied by auras if necessary
-        this.slowMultiplier = 1;
     }
 
     takeDamage(amount) {
         this.health -= amount;
-        if (this.health <= 0) {
-            this.isMarkedForDeletion = true;
-        }
+        if (this.health <= 0) this.isMarkedForDeletion = true;
     }
 
     attack(player) {
-        if (!this.isBoss || this.attackCooldown > 0 || this.bossState === 'DASHING' || this.bossState === 'CHARGING') {
-            return [];
-        }
-
-        const distance = Math.hypot(player.position.x - this.position.x, player.position.y - this.position.y);
-        if (distance > 200) {
-            return [];
-        }
-
+        if (!this.isBoss || this.attackCooldown > 0 || !this.isVisible || this.bossState.includes('CHARGING') || this.bossState.includes('DASHING') || this.bossState.includes('TELEPORTING')) return [];
         this.attackCooldown = this.attackTimer;
-        const angle = Math.atan2(player.position.y - this.position.y, player.position.x - this.position.x);
-        const projectileSpeed = 3;
+        const angleToPlayer = Math.atan2(player.position.y - this.position.y, player.position.x - this.position.x);
         let attacks = [];
-
-        // Basic attack for all bosses
-        attacks.push({
-            type: 'projectile',
-            position: { ...this.position },
-            velocity: { x: Math.cos(angle) * projectileSpeed, y: Math.sin(angle) * projectileSpeed },
-            damage: this.damage, source: 'enemy', color: 'orange'
-        });
-
-        // Unique attack for Boss 3
-        if (this.type.id === 'boss3') {
-            for (let i = -1; i <= 1; i++) {
-                if (i === 0) continue;
-                const spreadAngle = angle + (i * 0.2); // 0.2 radians spread
-                attacks.push({
-                    type: 'projectile',
-                    position: { ...this.position },
-                    velocity: { x: Math.cos(spreadAngle) * projectileSpeed, y: Math.sin(spreadAngle) * projectileSpeed },
-                    damage: this.damage * 0.7, source: 'enemy', color: '#ff4500' // OrangeRed
-                });
-            }
+        const projectileSpeed = 4;
+        const laserIds = ['boss5', 'boss9', 'boss13', 'boss17'];
+        if (laserIds.includes(this.type.id)) {
+            this.attackCooldown = this.attackTimer * 1.5;
+            attacks.push({ type: 'laser', angle: this.laserAngle, damage: this.damage, duration: 60 });
+            return attacks;
         }
-
-        // Unique attack for Boss 4
-        if (this.type.id === 'boss4') {
-             for (let i = -1; i <= 1; i++) {
-                if (i === 0) continue;
-                const spreadAngle = angle + (i * 0.2);
-                attacks.push({
-                    type: 'projectile',
-                    position: { ...this.position },
-                    velocity: { x: Math.cos(spreadAngle) * projectileSpeed, y: Math.sin(spreadAngle) * projectileSpeed },
-                    damage: this.damage * 0.7, source: 'enemy', color: '#ff4500'
-                });
-            }
+        const trapperIds = ['boss7', 'boss11', 'boss15', 'boss19'];
+        if (trapperIds.includes(this.type.id)) {
+            this.attackCooldown = this.attackTimer * 1.2;
+            attacks.push({ type: 'ground_area', position: { ...this.position }, radius: this.width, damage: this.damage, duration: 600 });
+            return attacks;
         }
-
+        switch (this.type.id) {
+            case 'boss1': attacks.push({ type: 'projectile', position: { ...this.position }, velocity: { x: Math.cos(angleToPlayer) * projectileSpeed, y: Math.sin(angleToPlayer) * projectileSpeed }, damage: this.damage, source: 'enemy' }); break;
+            case 'boss2': if (this.bossState === 'MOVING') attacks.push({ type: 'projectile', position: { ...this.position }, velocity: { x: Math.cos(angleToPlayer) * projectileSpeed, y: Math.sin(angleToPlayer) * projectileSpeed }, damage: this.damage * 0.5, source: 'enemy' }); break;
+            case 'boss3': this.attackCooldown = this.attackTimer * 2; attacks.push({ type: 'spawn', count: 2 }); break;
+            case 'boss4': this.attackCooldown = this.attackTimer * 1.5; for (let i = -2; i <= 2; i++) attacks.push({ type: 'projectile', position: { ...this.position }, velocity: { x: Math.cos(angleToPlayer + (i * 0.15)) * projectileSpeed, y: Math.sin(angleToPlayer + (i * 0.15)) * projectileSpeed }, damage: this.damage * 0.8, source: 'enemy' }); break;
+            case 'boss8': for (let i = 0; i < 8; i++) attacks.push({ type: 'projectile', position: { ...this.position }, velocity: { x: Math.cos((Date.now() / 500) + (i * Math.PI / 4)) * projectileSpeed * 0.8, y: Math.sin((Date.now() / 500) + (i * Math.PI / 4)) * projectileSpeed * 0.8 }, damage: this.damage * 0.7, source: 'enemy' }); break;
+            case 'boss12': for (let i = 0; i < 12; i++) attacks.push({ type: 'projectile', position: { ...this.position }, velocity: { x: Math.cos(i * Math.PI / 6) * projectileSpeed, y: Math.sin(i * Math.PI / 6) * projectileSpeed }, damage: this.damage, source: 'enemy' }); break;
+            case 'boss16': attacks.push({ type: 'projectile', position: { ...this.position }, velocity: { x: Math.cos(angleToPlayer) * projectileSpeed, y: Math.sin(angleToPlayer) * projectileSpeed }, damage: this.damage, source: 'enemy', homing: true }); break;
+            case 'boss20': this.attackCooldown = this.attackTimer * 2; for (let i = 0; i < 24; i++) attacks.push({ type: 'projectile', position: { ...this.position }, velocity: { x: Math.cos(i * Math.PI / 12) * projectileSpeed * 1.5, y: Math.sin(i * Math.PI / 12) * projectileSpeed * 1.5 }, damage: this.damage, source: 'enemy' }); break;
+        }
         return attacks;
     }
 }

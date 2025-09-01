@@ -18,14 +18,38 @@ export const passives = [
         }
     },
     {
-        id: 'cooldown_down', // "Attack speed up"
-        name: "Sistema de Enfriamiento",
+        id: 'cooldown_down',
+        name: "Libro de Hechizos",
         description: "Reduce el enfriamiento de todas las armas un 8%.",
         apply: (player) => {
-            // This needs to be applied to all current and future weapons.
-            // We can add a multiplier to the player stats.
             if (!player.cooldown_modifier) player.cooldown_modifier = 1;
             player.cooldown_modifier *= 0.92;
+        }
+    },
+    {
+        id: 'pickup_radius_up',
+        name: "Imán",
+        description: "Aumenta el radio de recolección un 25%.",
+        apply: (player) => {
+            player.pickupRadius *= 1.25;
+        }
+    },
+    {
+        id: 'luck_up',
+        name: "Trébol de 4 Hojas",
+        description: "Aumenta la suerte un 10%. Afecta las recompensas y eventos.",
+        apply: (player) => {
+            if (!player.luck) player.luck = 1;
+            player.luck *= 1.10;
+        }
+    },
+    {
+        id: 'projectile_count_up',
+        name: "Duplicador",
+        description: "Añade +1 proyectil a las armas que lo permitan.",
+        apply: (player) => {
+            if (!player.projectileCount) player.projectileCount = 1;
+            player.projectileCount += 1;
         }
     },
     {
@@ -34,7 +58,7 @@ export const passives = [
         description: "Repara un 1% de la vida máxima por segundo.",
         apply: (player) => {
             if (!player.healthRegenPercent) player.healthRegenPercent = 0;
-            player.healthRegenPercent += 0.01; // 1%
+            player.healthRegenPercent += 0.01;
         }
     }
 ];

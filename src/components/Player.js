@@ -31,11 +31,14 @@ export class Player {
 
         // Weapon and attack properties
         this.weapons = []; // Player can have multiple weapon instances
+        this.passives = []; // Player can have multiple passive instances
 
         // Modifiers from passive upgrades
         this.cooldown_modifier = 1;
         this.healthRegenPercent = 0;
         this.revives = 0;
+        this.luck = 1; // 1 = 100% base luck
+        this.projectileCount = 1; // Base projectile count
 
         // Leveling properties
         this.level = 1;
