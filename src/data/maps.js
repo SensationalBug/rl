@@ -1,58 +1,36 @@
 export const maps = [
     {
-        id: 'tierra',
-        name: 'La Tierra',
+        id: 'map1',
+        name: 'Mapa 1',
         backgroundColor: '#1a3a1a',
-        unlocked: true,
-        allowedEnemies: ['spaceMinion', 'starBat', 'spaceMite', 'stardustSerpent']
+        allowedEnemies: ['spaceMinion', 'starBat', 'spaceMite', 'stardustSerpent'],
+        finalBoss: 'boss1'
     },
     {
-        id: 'sol',
-        name: 'El Sol',
+        id: 'map2',
+        name: 'Mapa 2',
         backgroundColor: '#c25a00',
-        unlocked: false,
-        allowedEnemies: [] // To be defined later
+        allowedEnemies: ['asteroidGolem', 'solarWasp', 'vortexPhantom', 'cometGuardian'],
+        finalBoss: 'boss2'
     },
     {
-        id: 'sistema-solar',
-        name: 'Sistema Solar',
+        id: 'map3',
+        name: 'Mapa 3',
         backgroundColor: '#4d4d6e',
-        unlocked: false,
-        allowedEnemies: []
+        allowedEnemies: ['nebulaLeviathan', 'darkMatterCreeper', 'voidHunter', 'cosmicAnomaly'],
+        finalBoss: 'boss3'
     },
     {
-        id: 'via-lactea',
-        name: 'Vía Láctea',
+        id: 'map4',
+        name: 'Mapa 4',
         backgroundColor: '#3c1b4a',
-        unlocked: false,
-        allowedEnemies: []
+        allowedEnemies: ['singularityLurker', 'galacticDragon', 'dimensionalRift', 'hypergiantHydra'],
+        finalBoss: 'boss4'
     },
     {
-        id: 'gran-muralla',
-        name: 'Gran Muralla H-C Boreal',
-        backgroundColor: '#6b2e2e',
-        unlocked: false,
-        allowedEnemies: []
-    },
-    {
-        id: 'andromeda',
-        name: 'Andrómeda',
-        backgroundColor: '#0f4d4d',
-        unlocked: false,
-        allowedEnemies: []
-    },
-    {
-        id: 'red-cosmica',
-        name: 'Red Cósmica',
-        backgroundColor: '#5e5e5e',
-        unlocked: false,
-        allowedEnemies: []
-    },
-    {
-        id: 'gran-atractor',
+        id: 'map5',
         name: 'El Gran Atractor',
         backgroundColor: '#1a1a1a',
-        unlocked: false,
-        allowedEnemies: []
+        allowedEnemies: ['quantumColossus', 'cosmicJelly', 'quantumMilossus', 'cosmicCream']
     }
 ];
