@@ -127,32 +127,22 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function populateCharacterSelection() {
         characterList.innerHTML = '';
-        const unlockedCharacters = getPlayerData().unlockedCharacters;
         characters.forEach(char => {
             const card = document.createElement('div');
             card.className = 'character-card';
+            card.style.cursor = 'pointer';
             const startingWeaponName = weapons[char.startingWeapon].name;
-
-            if (unlockedCharacters.includes(char.id)) {
-                card.style.cursor = 'pointer';
-                card.innerHTML = `
-                    <img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img">
-                    <h2>${char.name}</h2>
-                    <p>${char.description}</p>
-                    <p class="ability">${char.ability}</p>
-                    <p class="starting-weapon">Arma Inicial: <strong>${startingWeaponName}</strong></p>`;
-                card.addEventListener('click', () => {
-                    selectedCharacter = char;
-                    populateMapSelectionScreen();
-                    changeState('mapSelection');
-                });
-            } else {
-                card.classList.add('locked');
-                card.innerHTML = `
-                    <img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img" style="filter: grayscale(1) brightness(0.5);">
-                    <h2>${char.name}</h2>
-                    <p class="locked-text">BLOQUEADO</p>`;
-            }
+            card.innerHTML = `
+                <img src="${char.imageSrc}" alt="${char.name}" class="ship-preview-img">
+                <h2>${char.name}</h2>
+                <p>${char.description}</p>
+                <p class="ability">${char.ability}</p>
+                <p class="starting-weapon">Arma Inicial: <strong>${startingWeaponName}</strong></p>`;
+            card.addEventListener('click', () => {
+                selectedCharacter = char;
+                populateMapSelectionScreen();
+                changeState('mapSelection');
+            });
             characterList.appendChild(card);
         });
     }
@@ -236,13 +226,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function populateMapSelectionScreen() {
         mapList.innerHTML = '';
-        const unlockedMaps = getPlayerData().unlockedMaps;
         maps.forEach(map => {
             const card = document.createElement('div');
             card.className = 'map-card';
             card.style.backgroundColor = map.backgroundColor;
 
-            if (unlockedMaps.includes(map.id)) {
+            if (map.unlocked) {
                 card.innerHTML = `<h3>${map.name}</h3>`;
                 card.addEventListener('click', () => init(selectedCharacter, map));
             } else {
@@ -595,28 +584,42 @@ window.addEventListener('DOMContentLoaded', () => {
             // Gold bags don't have an update method, they are static
 
             // --- Collision Detection ---
-            // Player-Enemy Collision
+            // Player-Enemy Collision (AABB)
             enemies.forEach(e => {
-                // Correctly calculate the center of the enemy for collision detection
-                const enemyCenterX = e.position.x + e.width / 2;
-                const enemyCenterY = e.position.y + e.height / 2;
-                const dx = player.position.x - enemyCenterX;
-                const dy = player.position.y - enemyCenterY;
-                const distance = Math.hypot(dx, dy);
-                if (distance < player.width / 2 + e.width / 2) {
+                const playerLeft = player.position.x - player.width / 2;
+                const playerRight = player.position.x + player.width / 2;
+                const playerTop = player.position.y - player.height / 2;
+                const playerBottom = player.position.y + player.height / 2;
+
+                const enemyLeft = e.position.x;
+                const enemyRight = e.position.x + e.width;
+                const enemyTop = e.position.y;
+                const enemyBottom = e.position.y + e.height;
+
+                if (playerLeft < enemyRight && playerRight > enemyLeft && playerTop < enemyBottom && playerBottom > enemyTop) {
                     player.takeDamage(e.damage);
                 }
             });
 
-            // Projectile-Enemy Collision
+            // Projectile-Enemy Collision (AABB)
             projectiles.forEach(p => {
                 if (p.isMarkedForDeletion) return;
+
+                const projLeft = p.position.x - p.radius;
+                const projRight = p.position.x + p.radius;
+                const projTop = p.position.y - p.radius;
+                const projBottom = p.position.y + p.radius;
 
                 if (p.source === 'player') {
                     enemies.forEach(e => {
                         if (e.isMarkedForDeletion) return;
-                        const dist = Math.hypot(p.position.x - e.position.x, p.position.y - e.position.y);
-                        if (dist < e.width / 2) { // Simple circle collision
+
+                        const enemyLeft = e.position.x;
+                        const enemyRight = e.position.x + e.width;
+                        const enemyTop = e.position.y;
+                        const enemyBottom = e.position.y + e.height;
+
+                        if (projLeft < enemyRight && projRight > enemyLeft && projTop < enemyBottom && projBottom > enemyTop) {
                             e.takeDamage(p.damage);
                             p.isMarkedForDeletion = true;
 
@@ -624,47 +627,39 @@ window.addEventListener('DOMContentLoaded', () => {
                             if (p.sourceWeapon && p.sourceWeapon.id === 'canon' && p.sourceWeapon.level >= 5) {
                                 groundAreas.push(new GroundArea({
                                     position: { ...e.position },
-                                    radius: 40, // Explosion radius
-                                    damage: p.damage * 0.5, // Explosion does 50% of projectile damage
-                                    duration: 20 // Lasts for 1/3 of a second
+                                    radius: 40,
+                                    damage: p.damage * 0.5,
+                                    duration: 20
                                 }));
                             }
                         }
                     });
                 } else if (p.source === 'enemy') {
-                    const dist = Math.hypot(p.position.x - player.position.x, p.position.y - player.position.y);
-                    if (dist < player.width / 2) {
+                    const playerLeft = player.position.x - player.width / 2;
+                    const playerRight = player.position.x + player.width / 2;
+                    const playerTop = player.position.y - player.height / 2;
+                    const playerBottom = player.position.y + player.height / 2;
+
+                    if (projLeft < playerRight && projRight > playerLeft && projTop < playerBottom && projBottom > playerTop) {
                         player.takeDamage(p.damage);
                         p.isMarkedForDeletion = true;
                     }
                 }
             });
 
-            // Spawn XP gems from defeated enemies and check for victory
+            // Spawn XP gems from defeated enemies
             enemies.forEach(e => {
                 if (e.isMarkedForDeletion) {
                     xpGems.push(new XPGem({ position: { ...e.position }, value: e.xpValue }));
 
-                    // --- VICTORY CONDITION CHECK ---
-                    if (selectedMap.finalBoss && e.type.id === selectedMap.finalBoss) {
+                    // Check for final boss victory
+                    if (e.type.id === 'boss4') {
                         const playerData = getPlayerData();
-                        const currentMapIndex = maps.findIndex(m => m.id === selectedMap.id);
-
-                        // Unlock next map
-                        const nextMap = maps[currentMapIndex + 1];
-                        if (nextMap && !playerData.unlockedMaps.includes(nextMap.id)) {
-                            playerData.unlockedMaps.push(nextMap.id);
+                        if (!playerData.hasWonGame) {
+                            addGold(1000);
+                            playerData.hasWonGame = true;
+                            savePlayerData();
                         }
-
-                        // Unlock next character (Map 1 unlocks ship 3, Map 2 unlocks ship 4, etc.)
-                        const characterToUnlockId = currentMapIndex + 3; // +1 for index to num, +2 for offset
-                        const characterToUnlock = characters.find(c => c.id === characterToUnlockId);
-                        if (characterToUnlock && !playerData.unlockedCharacters.includes(characterToUnlock.id)) {
-                            playerData.unlockedCharacters.push(characterToUnlock.id);
-                        }
-
-                        // Grant gold for victory and save progress
-                        addGold(1000); // Using addGold handles saving automatically
                         changeState('victory');
                     }
                 }

@@ -5,8 +5,6 @@ const PLAYER_DATA_KEY = 'space_survivor_player_data';
 const defaultData = {
     gold: 0,
     globalUpgrades: {},
-    unlockedMaps: ['map1'],
-    unlockedCharacters: [1, 2],
     hasWonGame: false
 };
 
@@ -26,13 +24,6 @@ export function loadPlayerData() {
         const savedData = localStorage.getItem(PLAYER_DATA_KEY);
         if (savedData) {
             playerData = JSON.parse(savedData);
-            // --- Migration for older save files ---
-            if (!playerData.unlockedMaps) {
-                playerData.unlockedMaps = ['map1'];
-            }
-            if (!playerData.unlockedCharacters) {
-                playerData.unlockedCharacters = [1, 2];
-            }
         } else {
             // No saved data, initialize with defaults
             playerData = { ...defaultData };
