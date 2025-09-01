@@ -54,6 +54,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const resumeBtn = document.getElementById('resume-btn');
     const exitGameBtn = document.getElementById('exit-game-btn');
 
+
     // --- UI Elements ---
     const goldCounter = mainMenuScreen.querySelector('.gold-counter');
 
@@ -367,7 +368,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const stats = w.getStats(player);
                 if (w.id === 'onda-de-repulsion') {
                     if (w.cooldown <= 0 && !w.isActive) { w.isActive = true; w.activeTimer = stats.duration; w.cooldown = stats.cooldown; }
-                    if (w.isActive) { enemies.forEach(enemy => { if (Math.hypot(player.position.x - enemy.position.x, player.position.y - enemy.position.y) < stats.area) enemy.takeDamage(stats.damage / 60); }); }
+                    if (w.isActive) { enemies.forEach(enemy => { if (Math.hypot(player.position.x - (enemy.position.x+enemy.width/2), player.position.y - (enemy.position.y+enemy.height/2)) < stats.area) enemy.takeDamage(stats.damage / 60); }); }
                 } else if (w.cooldown <= 0) {
                     const newAttacks = w.attack(player, enemies);
                     newAttacks.forEach(attackData => {
