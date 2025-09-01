@@ -30,8 +30,8 @@ export const enemyTypes = {
     cosmicCream: { health: 100, speed: 2.0, size: 150, color: 'green', xpValue: 10, damage: 50 },
 
 	// Bosses
-	boss1: { id: 'boss1', size: 100, color: '#ff8c00', xpValue: 200, damage: 30, isBoss: true }, // DarkOrange
-	boss2: { id: 'boss2', size: 100, color: '#e60000', xpValue: 300, damage: 35, isBoss: true }, // Bright Red
-	boss3: { id: 'boss3', size: 150, color: '#9932cc', xpValue: 400, damage: 45, isBoss: true }, // DarkOrchid
-	boss4: { id: 'boss4', size: 200, color: '#4b0082', xpValue: 500, damage: 60, isBoss: true }, // Indigo
+	boss1: { id: 'boss1', name: 'Primus', size: 100, color: '#ff8c00', xpValue: 200, damage: 30, isBoss: true },
+	boss2: { id: 'boss2', name: 'Secundus', size: 120, color: '#e60000', xpValue: 400, damage: 35, isBoss: true },
+	boss3: { id: 'boss3', name: 'Tertius', size: 150, color: '#9932cc', xpValue: 600, damage: 45, isBoss: true },
+	boss4: { id: 'boss4', name: 'Quartus', size: 200, color: '#4b0082', xpValue: 800, damage: 60, isBoss: true },
 };

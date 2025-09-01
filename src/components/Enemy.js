@@ -21,85 +21,77 @@ export class Enemy {
         this.slowMultiplier = 1; // 1 = no slow
 
         if (this.isBoss) {
-            this.attackCooldown = 120; // Initial delay before first attack
-            this.attackTimer = 180; // Base attack every 3 seconds
-            this.bossState = 'MOVING';
+            this.attackCooldown = 0;
+            this.attackTimer = 120; // Attacks every 2 seconds
+            this.bossState = 'MOVING'; // MOVING, CHARGING, DASHING
             this.bossStateTimer = 0;
             this.dashTarget = { x: 0, y: 0 };
         }
     }
 
     draw(ctx) {
+        // Draw the enemy
         ctx.fillStyle = this.color;
         ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
 
         // Draw Health Bar
-        if (this.health < this.maxHealth) {
-            const healthBarWidth = this.width;
-            const healthBarHeight = 5;
+        const healthBarWidth = this.width;
+        const healthBarHeight = 5;
             const healthBarX = this.position.x;
-            const healthBarY = this.position.y - healthBarHeight - 2;
+            const healthBarY = this.position.y - healthBarHeight - 2; // 2px above the enemy
+
             const healthPercentage = this.health / this.maxHealth;
+
+            // Background
             ctx.fillStyle = 'red';
             ctx.fillRect(healthBarX, healthBarY, healthBarWidth, healthBarHeight);
+
+            // Foreground
             ctx.fillStyle = 'green';
             ctx.fillRect(healthBarX, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
-        }
     }
 
     update(player) {
-        if (this.isBoss) {
+        if (this.isBoss && this.type.id === 'boss4' && this.bossState !== 'DASHING') {
             this.bossStateTimer--;
-
-            // --- Boss-specific state updates ---
-            if (this.type.id === 'boss2') { // Charger
-                if (this.bossState === 'MOVING' && this.bossStateTimer <= 0) {
-                    this.bossState = 'CHARGING';
-                    this.bossStateTimer = 90;
-                    this.color = 'white';
-                    this.dashTarget = { ...player.position };
-                } else if (this.bossState === 'CHARGING' && this.bossStateTimer <= 0) {
+            if (this.bossState === 'CHARGING') {
+                if (this.bossStateTimer <= 0) {
                     this.bossState = 'DASHING';
-                    this.bossStateTimer = 60;
+                    this.bossStateTimer = 60; // Dash duration
                     this.color = this.originalColor;
-                } else if (this.bossState === 'DASHING' && this.bossStateTimer <= 0) {
-                    this.bossState = 'MOVING';
-                    this.bossStateTimer = 300;
                 }
+                // Don't move while charging
+                return;
             }
-            if (this.type.id === 'boss4') { // Aura Tank
-                const auraRadius = this.width * 1.5;
-                if (Math.hypot(player.position.x - this.position.x, player.position.y - this.position.y) < auraRadius) {
-                    player.takeDamage(this.damage * 0.1 / 60);
-                }
+            if (this.bossStateTimer <= 0) {
+                this.bossState = 'CHARGING';
+                this.bossStateTimer = 90; // Charge duration
+                this.color = 'white'; // Charge indicator
+                this.dashTarget = { ...player.position };
             }
-
-            // --- Movement ---
-            if (this.bossState !== 'CHARGING') {
-                this.move(player);
-            }
-
-            this.attackCooldown--;
-        } else {
-            // Regular enemy logic
-            this.move(player);
         }
 
-        this.slowMultiplier = 1;
-    }
-
-    move(player){
-        let target = player.position;
+        const target = (this.isBoss && this.bossState === 'DASHING') ? this.dashTarget : player.position;
+        const angle = Math.atan2(target.y - this.position.y, target.x - this.position.x);
         let currentSpeed = this.speed * this.slowMultiplier;
 
-        if (this.isBoss && this.bossState === 'DASHING' && this.type.id === 'boss2') {
-            target = this.dashTarget;
-            currentSpeed *= 4; // Dash speed multiplier
+        if (this.isBoss && this.bossState === 'DASHING') {
+            currentSpeed *= 3; // Dash speed
+            this.bossStateTimer--;
+            if (this.bossStateTimer <= 0) {
+                this.bossState = 'MOVING';
+            }
         }
 
-        const angle = Math.atan2(target.y - this.position.y, target.x - this.position.x);
         this.position.x += Math.cos(angle) * currentSpeed;
         this.position.y += Math.sin(angle) * currentSpeed;
+
+        if (this.isBoss) {
+            this.attackCooldown--;
+        }
+
+        // Reset slow multiplier each frame, it will be re-applied by auras if necessary
+        this.slowMultiplier = 1;
     }
 
     takeDamage(amount) {
@@ -114,54 +106,50 @@ export class Enemy {
             return [];
         }
 
+        const distance = Math.hypot(player.position.x - this.position.x, player.position.y - this.position.y);
+        if (distance > 200) {
+            return [];
+        }
+
         this.attackCooldown = this.attackTimer;
-        const angleToPlayer = Math.atan2(player.position.y - this.position.y, player.position.x - this.position.x);
+        const angle = Math.atan2(player.position.y - this.position.y, player.position.x - this.position.x);
         const projectileSpeed = 3;
         let attacks = [];
 
-        // --- Boss-specific attack patterns ---
-        switch (this.type.id) {
-            case 'boss1': // Standard Shooter
+        // Basic attack for all bosses
+        attacks.push({
+            type: 'projectile',
+            position: { ...this.position },
+            velocity: { x: Math.cos(angle) * projectileSpeed, y: Math.sin(angle) * projectileSpeed },
+            damage: this.damage, source: 'enemy', color: 'orange'
+        });
+
+        // Unique attack for Boss 3
+        if (this.type.id === 'boss3') {
+            for (let i = -1; i <= 1; i++) {
+                if (i === 0) continue;
+                const spreadAngle = angle + (i * 0.2); // 0.2 radians spread
                 attacks.push({
-                    type: 'projectile', position: { ...this.position },
-                    velocity: { x: Math.cos(angleToPlayer) * projectileSpeed, y: Math.sin(angleToPlayer) * projectileSpeed },
-                    damage: this.damage, source: 'enemy', color: 'orange'
+                    type: 'projectile',
+                    position: { ...this.position },
+                    velocity: { x: Math.cos(spreadAngle) * projectileSpeed, y: Math.sin(spreadAngle) * projectileSpeed },
+                    damage: this.damage * 0.7, source: 'enemy', color: '#ff4500' // OrangeRed
                 });
-                break;
+            }
+        }
 
-            case 'boss2': // Charger - only attacks when not charging/dashing
-                if (this.bossState === 'MOVING') {
-                    attacks.push({
-                        type: 'projectile', position: { ...this.position },
-                        velocity: { x: Math.cos(angleToPlayer) * projectileSpeed, y: Math.sin(angleToPlayer) * projectileSpeed * 0.5 },
-                        damage: this.damage * 0.5, source: 'enemy', color: 'yellow'
-                    });
-                }
-                break;
-
-            case 'boss3': // Spawner
-                this.attackCooldown = this.attackTimer * 2; // Spawns less frequently
-                attacks.push({ type: 'spawn', count: 2 });
-                break;
-
-            case 'boss4': // Tank - Shotgun blast
-                this.attackCooldown = this.attackTimer * 1.5; // Slower, more powerful attack
-                for (let i = -2; i <= 2; i++) {
-                    const spreadAngle = angleToPlayer + (i * 0.15); // 0.15 radians spread
-                    attacks.push({
-                        type: 'projectile', position: { ...this.position },
-                        velocity: { x: Math.cos(spreadAngle) * projectileSpeed, y: Math.sin(spreadAngle) * projectileSpeed },
-                        damage: this.damage * 0.8, source: 'enemy', color: '#9932cc'
-                    });
-                }
-                break;
-
-            default: // Default attack for any other boss
+        // Unique attack for Boss 4
+        if (this.type.id === 'boss4') {
+             for (let i = -1; i <= 1; i++) {
+                if (i === 0) continue;
+                const spreadAngle = angle + (i * 0.2);
                 attacks.push({
-                    type: 'projectile', position: { ...this.position },
-                    velocity: { x: Math.cos(angleToPlayer) * projectileSpeed, y: Math.sin(angleToPlayer) * projectileSpeed },
-                    damage: this.damage, source: 'enemy', color: 'orange'
+                    type: 'projectile',
+                    position: { ...this.position },
+                    velocity: { x: Math.cos(spreadAngle) * projectileSpeed, y: Math.sin(spreadAngle) * projectileSpeed },
+                    damage: this.damage * 0.7, source: 'enemy', color: '#ff4500'
                 });
+            }
         }
 
         return attacks;

@@ -395,12 +395,10 @@ window.addEventListener('DOMContentLoaded', () => {
     function drawUI() {
         if (!player) return;
 
-        const baseFontSize = canvas.width / 60; // Base font size scales with screen width
-
         // --- Game Timer ---
         const minutes = Math.floor(gameTimer / 3600).toString().padStart(2, '0');
         const seconds = Math.floor((gameTimer % 3600) / 60).toString().padStart(2, '0');
-        ctx.font = `${Math.max(20, baseFontSize)}px Arial`;
+        ctx.font = '30px Arial';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.fillText(`${minutes}:${seconds}`, canvas.width / 2, 50);
@@ -444,7 +442,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.strokeRect(healthBarX, healthBarY, xpBarWidth, healthBarHeight);
 
         // Text
-        ctx.font = `${Math.max(12, baseFontSize * 0.7)}px Arial`;
+        ctx.font = '14px Arial';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -586,19 +584,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     const attackDataArray = e.attack(player);
                     if (attackDataArray.length > 0) {
                         attackDataArray.forEach(attackData => {
-                            if (attackData.type === 'projectile') {
-                                projectiles.push(new Projectile(attackData));
-                            } else if (attackData.type === 'spawn') {
-                                for (let i = 0; i < attackData.count; i++) {
-                                    const enemyKey = selectedMap.allowedEnemies[Math.floor(Math.random() * selectedMap.allowedEnemies.length)];
-                                    const baseStats = enemyTypes[enemyKey];
-                                    if (baseStats) {
-                                        const spawnOffset = (Math.random() - 0.5) * 200;
-                                        const position = { x: e.position.x + spawnOffset, y: e.position.y + spawnOffset };
-                                        enemies.push(new Enemy({ position, type: baseStats }));
-                                    }
-                                }
-                            }
+                            projectiles.push(new Projectile(attackData));
                         });
                     }
                 }
@@ -651,7 +637,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Spawn XP gems from defeated enemies
+            // Spawn XP gems from defeated enemies and check for victory
             enemies.forEach(e => {
                 if (e.isMarkedForDeletion) {
                     xpGems.push(new XPGem({ position: { ...e.position }, value: e.xpValue }));
@@ -667,10 +653,11 @@ window.addEventListener('DOMContentLoaded', () => {
                             playerData.unlockedMaps.push(nextMap.id);
                         }
 
-                        // Unlock next character
-                        const nextCharacter = characters.find(c => !playerData.unlockedCharacters.includes(c.id));
-                        if (nextCharacter) {
-                            playerData.unlockedCharacters.push(nextCharacter.id);
+                        // Unlock next character (Map 1 unlocks ship 3, Map 2 unlocks ship 4, etc.)
+                        const characterToUnlockId = currentMapIndex + 3; // +1 for index to num, +2 for offset
+                        const characterToUnlock = characters.find(c => c.id === characterToUnlockId);
+                        if (characterToUnlock && !playerData.unlockedCharacters.includes(characterToUnlock.id)) {
+                            playerData.unlockedCharacters.push(characterToUnlock.id);
                         }
 
                         // Grant gold for victory and save progress
