@@ -597,8 +597,11 @@ window.addEventListener('DOMContentLoaded', () => {
             // --- Collision Detection ---
             // Player-Enemy Collision
             enemies.forEach(e => {
-                const dx = player.position.x - e.position.x;
-                const dy = player.position.y - e.position.y;
+                // Correctly calculate the center of the enemy for collision detection
+                const enemyCenterX = e.position.x + e.width / 2;
+                const enemyCenterY = e.position.y + e.height / 2;
+                const dx = player.position.x - enemyCenterX;
+                const dy = player.position.y - enemyCenterY;
                 const distance = Math.hypot(dx, dy);
                 if (distance < player.width / 2 + e.width / 2) {
                     player.takeDamage(e.damage);
